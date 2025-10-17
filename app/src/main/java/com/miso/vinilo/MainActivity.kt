@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -61,7 +62,8 @@ fun ViniloApp() {
                             tint = tint
                         )
                     },
-                    label = { Text(it.label) },
+                    // Force the label to use the app typography so we know it's using Montserrat
+                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall) },
                     selected = it == currentDestination,
                     onClick = { currentDestination = it }
                 )
