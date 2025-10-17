@@ -28,6 +28,10 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
+import com.miso.vinilo.ui.home.HomeScreen
+import com.miso.vinilo.ui.albums.AlbumsScreen
+import com.miso.vinilo.ui.artists.ArtistsScreen
+import com.miso.vinilo.ui.collectors.CollectorsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,10 +75,13 @@ fun ViniloApp() {
         }
     ) {
         Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+            val contentModifier = Modifier.padding(innerPadding)
+            when (currentDestination) {
+                AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
+                AppDestinations.ALBUMES -> AlbumsScreen(modifier = contentModifier)
+                AppDestinations.ARTISTAS -> ArtistsScreen(modifier = contentModifier)
+                AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
+            }
         }
     }
 }
