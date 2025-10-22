@@ -1,4 +1,4 @@
-package com.miso.vinilo.ui.home
+package com.miso.vinilo.ui.views.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
