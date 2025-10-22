@@ -28,10 +28,10 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
-import com.miso.vinilo.ui.home.HomeScreen
-import com.miso.vinilo.ui.albums.AlbumsScreen
-import com.miso.vinilo.ui.artists.ArtistsScreen
-import com.miso.vinilo.ui.collectors.CollectorsScreen
+import com.miso.vinilo.ui.views.home.HomeScreen
+import com.miso.vinilo.ui.views.albums.AlbumsScreen
+import com.miso.vinilo.ui.views.artists.ArtistsScreen
+import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

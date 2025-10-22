@@ -18,6 +18,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // BuildConfig field to configure the base URL per build type
+        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
     }
 
     buildTypes {
@@ -27,6 +30,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Override BASE_URL in release if you want a different production endpoint
+            buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
+        }
+        debug {
+            // ensure debug has the development URL (emulator host)
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
         }
     }
     compileOptions {
@@ -38,6 +47,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // Enable BuildConfig fields declared via buildConfigField
+        buildConfig = true
     }
 }
 
@@ -58,4 +69,16 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Retrofit & Moshi for network service adapter (use version catalog)
+    implementation(libs.retrofit)
+    implementation(libs.converter.moshi)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
+
+    // Test dependencies: MockWebServer and coroutines test
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    // MockK for unit tests
+    testImplementation("io.mockk:mockk:1.13.5")
 }

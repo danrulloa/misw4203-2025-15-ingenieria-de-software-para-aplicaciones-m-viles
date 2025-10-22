@@ -1,4 +1,4 @@
-package com.miso.vinilo.ui.collectors
+package com.miso.vinilo.ui.views.collectors
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
