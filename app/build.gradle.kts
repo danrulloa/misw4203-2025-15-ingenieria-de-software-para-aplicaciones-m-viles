@@ -76,9 +76,14 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
 
+    // Coil for image loading in Compose
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
     // Test dependencies: MockWebServer and coroutines test
     testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     // MockK for unit tests
     testImplementation("io.mockk:mockk:1.13.5")
+    // AndroidX Arch testing (InstantTaskExecutorRule) to allow LiveData/ViewModel unit tests on JVM
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 }
