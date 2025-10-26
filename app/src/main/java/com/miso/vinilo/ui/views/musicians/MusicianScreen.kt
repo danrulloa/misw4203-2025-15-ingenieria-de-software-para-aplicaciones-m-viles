@@ -203,7 +203,7 @@ private fun MusicianRow(musician: Musician) {
     }
 }
 
-private fun resolveImageUrl(url: String?): String? {
+internal fun resolveImageUrl(url: String?): String? {
     if (url.isNullOrBlank()) return null
     val trimmed = url.trim()
     // Replace localhost addresses so emulator can reach host machine
@@ -223,7 +223,7 @@ private fun resolveImageUrl(url: String?): String? {
     }
 }
 
-private fun formatBirthDate(birthDateIso: String?): String {
+internal fun formatBirthDate(birthDateIso: String?): String {
     if (birthDateIso.isNullOrBlank()) return ""
     return try {
         val odt = java.time.OffsetDateTime.parse(birthDateIso)
