@@ -20,7 +20,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // BuildConfig field to configure the base URL per build type
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
+        // Use the deployed backend URL by default
+        buildConfigField("String", "BASE_URL", "\"https://vinyls-backend-8fb6b230b5f0.herokuapp.com/\"")
     }
 
     buildTypes {
@@ -31,11 +32,12 @@ android {
                 "proguard-rules.pro"
             )
             // Override BASE_URL in release if you want a different production endpoint
-            buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
+            buildConfigField("String", "BASE_URL", "\"https://vinyls-backend-8fb6b230b5f0.herokuapp.com/\"")
         }
         debug {
             // ensure debug has the development URL (emulator host)
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
+            // Point debug builds at the deployed API as requested
+            buildConfigField("String", "BASE_URL", "\"https://vinyls-backend-8fb6b230b5f0.herokuapp.com/\"")
         }
     }
     compileOptions {
@@ -77,13 +79,20 @@ dependencies {
     implementation(libs.moshi.kotlin)
 
     // Coil for image loading in Compose
-    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Koin for dependency injection
+    implementation("io.insert-koin:koin-android:4.1.1")
+    implementation("io.insert-koin:koin-androidx-compose:4.1.1")
 
     // Test dependencies: MockWebServer and coroutines test
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.2.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     // MockK for unit tests
-    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("io.mockk:mockk:1.14.6")
     // AndroidX Arch testing (InstantTaskExecutorRule) to allow LiveData/ViewModel unit tests on JVM
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    // Koin test helpers
+    testImplementation("io.insert-koin:koin-test:4.1.1")
+    testImplementation("io.insert-koin:koin-test-junit4:4.1.1")
 }
