@@ -1,6 +1,5 @@
 package com.miso.vinilo.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -13,23 +12,22 @@ import kotlinx.coroutines.launch
 
 /**
  * ViewModel that exposes musician list state to the UI.
- * It depends on a `MusicianRepository` abstraction so it can be easily tested.
+ * It depends on a `MusicianController` abstraction so it can be easily tested.
  */
 class MusicianViewModel(
     private val controller: MusicianController
 ) : ViewModel() {
 
-    private val _state = MutableLiveData<UiState>(UiState.Loading)
+    private val _state = MutableLiveData<UiState>(UiState.Idle)
     val state: LiveData<UiState> = _state
 
-    init {
-        fetchMusicians()
-    }
+    // Removed eager fetch from init: the UI should explicitly request data.
 
     /**
      * Triggers a network load of musicians and updates `state` accordingly.
+     * This method must be called by the UI (or coordination layer) when data is required.
      */
-    fun fetchMusicians() {
+    fun loadMusicians() {
         viewModelScope.launch {
             _state.value = UiState.Loading
             when (val result = controller.getMusicians()) {
@@ -40,9 +38,10 @@ class MusicianViewModel(
     }
 
     /**
-     * UI-friendly sealed class representing Loading/Success/Error states.
+     * UI-friendly sealed class representing Idle/Loading/Success/Error states.
      */
     sealed class UiState {
+        object Idle : UiState()
         object Loading : UiState()
         data class Success(val data: List<Musician>) : UiState()
         data class Error(val message: String) : UiState()

@@ -20,12 +20,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miso.vinilo.domain.MusicianControllerImpl
 import com.miso.vinilo.viewmodels.MusicianViewModelFactory
 import com.miso.vinilo.ui.theme.BaseWhite
@@ -42,21 +45,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Create controller + ViewModelFactory and obtain ViewModel instance.
-        // Use 10.0.2.2 to reach host localhost from Android emulator.
-        val controller = MusicianControllerImpl.create(BuildConfig.BASE_URL)
-        val factory = MusicianViewModelFactory(controller)
-        val vm = ViewModelProvider(this, factory)[MusicianViewModel::class.java]
+        // Do not create controller/VM eagerly here. Create them lazily when the user
+        // navigates to the ARTISTAS screen to avoid unnecessary work at app launch.
         setContent {
             ViniloTheme {
-                ViniloApp(vm)
+                ViniloApp()
             }
         }
     }
 }
 
 @Composable
-fun ViniloApp(vm: MusicianViewModel) {
+fun ViniloApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.INICIO) }
 
     NavigationSuiteScaffold(
@@ -88,7 +88,7 @@ fun ViniloApp(vm: MusicianViewModel) {
             when (currentDestination) {
                 AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
                 AppDestinations.ALBUMES -> AlbumsScreen(modifier = contentModifier)
-                AppDestinations.ARTISTAS -> MusicianScreenHost(vm = vm, modifier = contentModifier)
+                AppDestinations.ARTISTAS -> MusicianScreenHost(modifier = contentModifier)
                 AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
             }
         }
@@ -96,11 +96,24 @@ fun ViniloApp(vm: MusicianViewModel) {
 }
 
 @Composable
-fun MusicianScreenHost(vm: MusicianViewModel, modifier: Modifier = Modifier) {
-    // Read a snapshot of the LiveData state; using vm.state.value avoids requiring
-    // lifecycle-compose. It will reflect the current value — if you want reactive updates
-    // in Compose prefer adding the lifecycle-viewmodel-compose dependency and using viewModel()/observeAsState().
-    val state = vm.state.value
+fun MusicianScreenHost(modifier: Modifier = Modifier) {
+    // Create the controller + factory + ViewModel when the user navigates to this screen.
+    // Use the viewModel() composable so we don't need to cast an activity from the context.
+    val controller = remember { MusicianControllerImpl.create(BuildConfig.BASE_URL) }
+    val factory = remember(controller) { MusicianViewModelFactory(controller) }
+    val vm: MusicianViewModel = viewModel(factory = factory)
+
+    // Observe LiveData state so the UI recomposes on updates.
+    val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+
+    // Trigger loading only when the composable enters composition and the VM is idle.
+    LaunchedEffect(Unit) {
+        if (state is MusicianViewModel.UiState.Idle) {
+            vm.loadMusicians()
+        }
+    }
+
+    // Pass the current state to the screen composable.
     MusicianScreen(state = state, modifier = modifier)
 }
 

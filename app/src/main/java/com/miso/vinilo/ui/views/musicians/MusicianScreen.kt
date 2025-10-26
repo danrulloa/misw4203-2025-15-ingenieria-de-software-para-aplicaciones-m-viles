@@ -14,8 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +49,7 @@ fun MusicianScreen(
         )
 
         when (val s = state) {
-            null, is MusicianViewModel.UiState.Loading -> {
+            null, is MusicianViewModel.UiState.Loading, is MusicianViewModel.UiState.Idle -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(text = "Cargando...", color = BaseWhite)
                 }
@@ -117,7 +115,8 @@ private fun MusicianRow(musician: Musician) {
                         .addHeader("Referer", referer)
                         .listener(
                             onSuccess = { _, result ->
-                                Log.d("MusicianRow", "Coil success: $resolvedImage, size=${result.drawable?.intrinsicWidth}x${result.drawable?.intrinsicHeight}")
+                                // result.drawable is non-null here per Coil callback signature
+                                Log.d("MusicianRow", "Coil success: $resolvedImage, size=${result.drawable.intrinsicWidth}x${result.drawable.intrinsicHeight}")
                             },
                             onError = { _, result ->
                                 Log.e("MusicianRow", "Coil failed to load image: $resolvedImage", result.throwable)

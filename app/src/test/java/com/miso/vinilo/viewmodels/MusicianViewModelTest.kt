@@ -38,7 +38,7 @@ class MusicianViewModelTest {
     }
 
     @Test
-    fun `fetchMusicians updates state to Success when controller returns success`() = runTest {
+    fun `loadMusicians updates state to Success when controller returns success`() = runTest {
         val expected = listOf(
             Musician(1, "Adele", "", "Singer", "1988-05-05T00:00:00.000Z")
         )
@@ -46,6 +46,9 @@ class MusicianViewModelTest {
         coEvery { controller.getMusicians() } returns NetworkResult.Success(expected)
 
         val vm = MusicianViewModel(controller)
+
+        // call the explicit load function introduced in the refactor
+        vm.loadMusicians()
 
         // advance the dispatcher so the viewModelScope coroutine runs
         testDispatcher.scheduler.advanceUntilIdle()
@@ -57,11 +60,13 @@ class MusicianViewModelTest {
     }
 
     @Test
-    fun `fetchMusicians updates state to Error when controller returns error`() = runTest {
+    fun `loadMusicians updates state to Error when controller returns error`() = runTest {
         val controller = mockk<MusicianController>()
         coEvery { controller.getMusicians() } returns NetworkResult.Error("fail")
 
         val vm = MusicianViewModel(controller)
+
+        vm.loadMusicians()
 
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -71,4 +76,3 @@ class MusicianViewModelTest {
         assertEquals("fail", message)
     }
 }
-
