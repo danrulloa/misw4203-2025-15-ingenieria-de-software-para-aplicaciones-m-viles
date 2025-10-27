@@ -6,8 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.miso.vinilo.data.model.Musician
 import com.miso.vinilo.data.network.NetworkResult
-import com.miso.vinilo.domain.MusicianController
-import com.miso.vinilo.domain.MusicianControllerImpl
+import com.miso.vinilo.domain.MusicianUseCase
+import com.miso.vinilo.domain.MusicianUseCaseImpl
 import kotlinx.coroutines.launch
 
 /**
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
  * It depends on a `MusicianController` abstraction so it can be easily tested.
  */
 class MusicianViewModel(
-    private val controller: MusicianController
+    private val controller: MusicianUseCase
 ) : ViewModel() {
 
     private val _state = MutableLiveData<UiState>(UiState.Idle)
@@ -51,5 +51,5 @@ class MusicianViewModel(
      * Convenience secondary constructor to quickly create a ViewModel wired to the network
      * implementation. Prefer passing a `MusicianController` in production (DI) or tests.
      */
-    constructor(baseUrl: String) : this(MusicianControllerImpl.create(baseUrl))
+    constructor(baseUrl: String) : this(MusicianUseCaseImpl.create(baseUrl))
 }

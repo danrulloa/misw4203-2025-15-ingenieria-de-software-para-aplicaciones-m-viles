@@ -5,8 +5,8 @@ import com.miso.vinilo.data.network.MusicianServiceAdapter
 import com.miso.vinilo.data.network.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.repository.MusicianRepository
 import com.miso.vinilo.data.repository.MusicianRepositoryImpl
-import com.miso.vinilo.domain.MusicianController
-import com.miso.vinilo.domain.MusicianControllerImpl
+import com.miso.vinilo.domain.MusicianUseCase
+import com.miso.vinilo.domain.MusicianUseCaseImpl
 import com.miso.vinilo.viewmodels.MusicianViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -16,6 +16,6 @@ val appModule = module {
     single<MusicianServiceAdapter> { NetworkServiceAdapterMusicians.create(BuildConfig.BASE_URL) }
     // Specify generic types explicitly to help the Kotlin compiler infer dependencies
     single<MusicianRepository> { MusicianRepositoryImpl(get<MusicianServiceAdapter>()) }
-    single<MusicianController> { MusicianControllerImpl(get<MusicianRepository>()) }
-    viewModel { MusicianViewModel(get<MusicianController>()) }
+    single<MusicianUseCase> { MusicianUseCaseImpl(get<MusicianRepository>()) }
+    viewModel { MusicianViewModel(get<MusicianUseCase>()) }
 }

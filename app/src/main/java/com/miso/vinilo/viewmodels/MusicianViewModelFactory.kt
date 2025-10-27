@@ -2,14 +2,14 @@ package com.miso.vinilo.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.miso.vinilo.domain.MusicianController
+import com.miso.vinilo.domain.MusicianUseCase
 
 /**
- * Factory to create [MusicianViewModel] with a provided [MusicianController].
+ * Factory to create [MusicianViewModel] with a provided [MusicianUseCase].
  * Use this in Activities/Fragments when the ViewModel requires constructor params.
  */
 class MusicianViewModelFactory(
-    private val controller: MusicianController
+    private val controller: MusicianUseCase
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

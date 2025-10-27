@@ -1,7 +1,7 @@
 package com.miso.vinilo.viewmodels
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.miso.vinilo.domain.MusicianController
+import com.miso.vinilo.domain.MusicianUseCase
 import com.miso.vinilo.data.model.Musician
 import com.miso.vinilo.data.network.NetworkResult
 import io.mockk.coEvery
@@ -42,7 +42,7 @@ class MusicianViewModelTest {
         val expected = listOf(
             Musician(1, "Adele", "", "Singer", "1988-05-05T00:00:00.000Z")
         )
-        val controller = mockk<MusicianController>()
+        val controller = mockk<MusicianUseCase>()
         coEvery { controller.getMusicians() } returns NetworkResult.Success(expected)
 
         val vm = MusicianViewModel(controller)
@@ -61,7 +61,7 @@ class MusicianViewModelTest {
 
     @Test
     fun `loadMusicians updates state to Error when controller returns error`() = runTest {
-        val controller = mockk<MusicianController>()
+        val controller = mockk<MusicianUseCase>()
         coEvery { controller.getMusicians() } returns NetworkResult.Error("fail")
 
         val vm = MusicianViewModel(controller)

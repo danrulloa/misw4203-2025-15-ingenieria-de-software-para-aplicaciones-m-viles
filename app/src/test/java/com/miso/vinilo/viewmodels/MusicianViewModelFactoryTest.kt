@@ -2,7 +2,7 @@ package com.miso.vinilo.viewmodels
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.ViewModel
-import com.miso.vinilo.domain.MusicianController
+import com.miso.vinilo.domain.MusicianUseCase
 import com.miso.vinilo.data.network.NetworkResult
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -39,7 +39,7 @@ class MusicianViewModelFactoryTest {
 
     @Test
     fun `create returns MusicianViewModel when given MusicianViewModel class`() = runTest {
-        val controller = mockk<MusicianController>(relaxed = true)
+        val controller = mockk<MusicianUseCase>(relaxed = true)
         // Ensure any suspend call used by init/fetchMusicians is handled
         coEvery { controller.getMusicians() } returns NetworkResult.Success(emptyList())
 
@@ -51,7 +51,7 @@ class MusicianViewModelFactoryTest {
 
     @Test
     fun `create throws for unknown ViewModel class`() {
-        val controller = mockk<MusicianController>(relaxed = true)
+        val controller = mockk<MusicianUseCase>(relaxed = true)
         val factory = MusicianViewModelFactory(controller)
 
         // Use a ViewModel subclass that is not MusicianViewModel to satisfy the generic bound

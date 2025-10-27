@@ -6,23 +6,23 @@ import com.miso.vinilo.data.repository.MusicianRepository
 import com.miso.vinilo.data.repository.MusicianRepositoryImpl
 
 /**
- * Controller / Use-case layer that orchestrates musician-related operations.
+ * Use-case layer that orchestrates musician-related operations.
  * This sits between ViewModel and Repository to follow MVVM + Clean separation.
  */
-interface MusicianController {
+interface MusicianUseCase {
     suspend fun getMusicians(): NetworkResult<List<Musician>>
 }
 
-class MusicianControllerImpl(
+class MusicianUseCaseImpl(
     private val repository: MusicianRepository
-) : MusicianController {
+) : MusicianUseCase {
 
     override suspend fun getMusicians(): NetworkResult<List<Musician>> = repository.getMusicians()
 
     companion object {
         /** Convenience factory to create a controller wired to the default network repository. */
-        fun create(baseUrl: String): MusicianController =
-            MusicianControllerImpl(MusicianRepositoryImpl.create(baseUrl))
+        fun create(baseUrl: String): MusicianUseCase =
+            MusicianUseCaseImpl(MusicianRepositoryImpl.create(baseUrl))
     }
 }
 

@@ -11,7 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class MusicianControllerTest {
+class MusicianUseCaseTest {
 
     @Test
     fun `getMusicians returns success when repository returns success`() = runTest {
@@ -21,7 +21,7 @@ class MusicianControllerTest {
         )
         coEvery { repo.getMusicians() } returns NetworkResult.Success(expected)
 
-        val controller = MusicianControllerImpl(repo)
+        val controller = MusicianUseCaseImpl(repo)
         val result = controller.getMusicians()
 
         assertTrue(result is NetworkResult.Success)
@@ -34,7 +34,7 @@ class MusicianControllerTest {
         val repo = mockk<MusicianRepository>()
         coEvery { repo.getMusicians() } returns NetworkResult.Error("repo failure")
 
-        val controller = MusicianControllerImpl(repo)
+        val controller = MusicianUseCaseImpl(repo)
         val result = controller.getMusicians()
 
         assertTrue(result is NetworkResult.Error)
@@ -47,7 +47,7 @@ class MusicianControllerTest {
         val repo = mockk<MusicianRepository>()
         coEvery { repo.getMusicians() } returns NetworkResult.Success(emptyList())
 
-        val controller = MusicianControllerImpl(repo)
+        val controller = MusicianUseCaseImpl(repo)
         val result = controller.getMusicians()
 
         assertTrue(result is NetworkResult.Success)
@@ -64,7 +64,7 @@ class MusicianControllerTest {
         )
         coEvery { repo.getMusicians() } returns NetworkResult.Success(expected)
 
-        val controller = MusicianControllerImpl(repo)
+        val controller = MusicianUseCaseImpl(repo)
         val result = controller.getMusicians()
 
         assertTrue(result is NetworkResult.Success)
@@ -79,7 +79,7 @@ class MusicianControllerTest {
         val cause = RuntimeException("boom")
         coEvery { repo.getMusicians() } returns NetworkResult.Error("failure", cause)
 
-        val controller = MusicianControllerImpl(repo)
+        val controller = MusicianUseCaseImpl(repo)
         val result = controller.getMusicians()
 
         assertTrue(result is NetworkResult.Error)
@@ -93,7 +93,7 @@ class MusicianControllerTest {
         val repo = mockk<MusicianRepository>()
         coEvery { repo.getMusicians() } returns NetworkResult.Success(emptyList())
 
-        val controller = MusicianControllerImpl(repo)
+        val controller = MusicianUseCaseImpl(repo)
         controller.getMusicians()
 
         coVerify(exactly = 1) { repo.getMusicians() }
