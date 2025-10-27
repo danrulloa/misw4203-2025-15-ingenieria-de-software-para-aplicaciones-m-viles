@@ -1,7 +1,6 @@
 package com.miso.vinilo.di
 
 import com.miso.vinilo.BuildConfig
-import com.miso.vinilo.data.network.MusicianServiceAdapter
 import com.miso.vinilo.data.network.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.repository.MusicianRepository
 import com.miso.vinilo.data.repository.MusicianRepositoryImpl
@@ -13,9 +12,10 @@ import org.koin.dsl.module
 
 // Koin module providing network, repository, controller and ViewModel bindings.
 val appModule = module {
-    single<MusicianServiceAdapter> { NetworkServiceAdapterMusicians.create(BuildConfig.BASE_URL) }
-    // Specify generic types explicitly to help the Kotlin compiler infer dependencies
-    single<MusicianRepository> { MusicianRepositoryImpl(get<MusicianServiceAdapter>()) }
+    // Bind the concrete network adapter directly
+    single { NetworkServiceAdapterMusicians.create(BuildConfig.BASE_URL) }
+    // Provide the repository and explicitly request the adapter type so Koin can infer correctly
+    single<MusicianRepository> { MusicianRepositoryImpl(get<NetworkServiceAdapterMusicians>()) }
     single<MusicianUseCase> { MusicianUseCaseImpl(get<MusicianRepository>()) }
     viewModel { MusicianViewModel(get<MusicianUseCase>()) }
 }

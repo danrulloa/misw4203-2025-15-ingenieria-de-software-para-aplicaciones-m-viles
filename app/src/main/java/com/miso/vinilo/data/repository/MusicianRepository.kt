@@ -1,13 +1,12 @@
 package com.miso.vinilo.data.repository
 
 import com.miso.vinilo.data.model.Musician
-import com.miso.vinilo.data.network.MusicianServiceAdapter
 import com.miso.vinilo.data.network.NetworkResult
 import com.miso.vinilo.data.network.NetworkServiceAdapterMusicians
 
 /**
  * Repository interface that exposes musician-related data operations.
- * The repository depends on a [MusicianServiceAdapter] for network access.
+ * The repository depends on a [NetworkServiceAdapterMusicians] for network access.
  */
 interface MusicianRepository {
     /**
@@ -17,10 +16,10 @@ interface MusicianRepository {
 }
 
 /**
- * Default implementation of [MusicianRepository] that delegates to a [MusicianServiceAdapter].
+ * Default implementation of [MusicianRepository] that delegates to a [NetworkServiceAdapterMusicians].
  */
 class MusicianRepositoryImpl(
-    private val serviceAdapter: MusicianServiceAdapter
+    private val serviceAdapter: NetworkServiceAdapterMusicians
 ) : MusicianRepository {
 
     override suspend fun getMusicians(): NetworkResult<List<Musician>> {

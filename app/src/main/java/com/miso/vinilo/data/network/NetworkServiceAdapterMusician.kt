@@ -8,13 +8,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 /**
- * Interface that defines the service adapter used to fetch musician data.
- */
-interface MusicianServiceAdapter {
-    suspend fun getMusicians(): NetworkResult<List<Musician>>
-}
-
-/**
  * Sealed class that represents the result of a network operation.
  */
 sealed class NetworkResult<out T> {
@@ -23,16 +16,17 @@ sealed class NetworkResult<out T> {
 }
 
 /**
- * Implementation of [MusicianServiceAdapter] that uses a network API to retrieve musician data.
+ * Network service adapter that uses a network API to retrieve musician data.
+ * Other classes should call this implementation directly.
  * @property api The [com.miso.vinilo.data.network.retrofit.MusicianApi] instance used to perform network requests.
  */
-class NetworkServiceAdapterMusicians(private val api: MusicianApi) : MusicianServiceAdapter {
+class NetworkServiceAdapterMusicians(private val api: MusicianApi) {
 
     /**
      * Fetches a list of musicians from the network API.
      * @return A [NetworkResult] containing a list of [Musician] on success or an [Error].
      */
-    override suspend fun getMusicians(): NetworkResult<List<Musician>> {
+    suspend fun getMusicians(): NetworkResult<List<Musician>> {
         return try {
             val dtos = api.getMusicians()
             val list = dtos.map { dto ->
@@ -52,11 +46,11 @@ class NetworkServiceAdapterMusicians(private val api: MusicianApi) : MusicianSer
 
     companion object {
         /**
-         * Creates an instance of [MusicianServiceAdapter].
+         * Creates an instance of [NetworkServiceAdapterMusicians].
          * @param baseUrl The base URL for network requests.
-         * @return A configured [MusicianServiceAdapter].
+         * @return A configured [NetworkServiceAdapterMusicians].
          */
-        fun create(baseUrl: String): MusicianServiceAdapter {
+        fun create(baseUrl: String): NetworkServiceAdapterMusicians {
             val moshi = Moshi.Builder()
                 .add(KotlinJsonAdapterFactory())
                 .build()

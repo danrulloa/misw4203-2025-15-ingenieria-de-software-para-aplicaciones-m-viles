@@ -12,7 +12,7 @@ import java.io.IOException
 class NetworkServiceAdapterMusiciansUnitTest {
 
     private val api = mockk<MusicianApi>()
-    private lateinit var adapter: MusicianServiceAdapter
+    private lateinit var adapter: NetworkServiceAdapterMusicians
 
     @Before
     fun setUp() {
@@ -32,4 +32,3 @@ class NetworkServiceAdapterMusiciansUnitTest {
         assertTrue(err.message.isNotBlank())
     }
 }
-

@@ -1,8 +1,8 @@
 package com.miso.vinilo.data.repository
 
 import com.miso.vinilo.data.model.Musician
-import com.miso.vinilo.data.network.MusicianServiceAdapter
 import com.miso.vinilo.data.network.NetworkResult
+import com.miso.vinilo.data.network.NetworkServiceAdapterMusicians
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -14,7 +14,7 @@ class MusicianRepositoryImplTest {
 
     @Test
     fun `getMusicians returns success when adapter returns success`() = runTest {
-        val adapter = mockk<MusicianServiceAdapter>()
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
         val expected = listOf(
             Musician(1, "Adele Laurie Blue Adkins", "", "Singer", "1988-05-05T00:00:00.000Z")
         )
@@ -30,7 +30,7 @@ class MusicianRepositoryImplTest {
 
     @Test
     fun `getMusicians returns error when adapter returns error`() = runTest {
-        val adapter = mockk<MusicianServiceAdapter>()
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
         coEvery { adapter.getMusicians() } returns NetworkResult.Error("network failure")
 
         val repo = MusicianRepositoryImpl(adapter)
@@ -41,4 +41,3 @@ class MusicianRepositoryImplTest {
         assertEquals("network failure", message)
     }
 }
-
