@@ -1,6 +1,6 @@
-package com.miso.vinilo.data.network
+package com.miso.vinilo.data.adapter
 
-import com.miso.vinilo.data.network.retrofit.MusicianApi
+import com.miso.vinilo.data.adapter.retrofit.MusicianApi
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest

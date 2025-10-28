@@ -1,7 +1,7 @@
 package com.miso.vinilo.di
 
 import com.miso.vinilo.BuildConfig
-import com.miso.vinilo.data.network.NetworkServiceAdapterMusicians
+import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.repository.MusicianRepository
 import com.miso.vinilo.data.repository.MusicianRepositoryImpl
 import com.miso.vinilo.domain.MusicianUseCase

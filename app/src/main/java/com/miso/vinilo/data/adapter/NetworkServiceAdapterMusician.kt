@@ -1,7 +1,7 @@
-package com.miso.vinilo.data.network
+package com.miso.vinilo.data.adapter
 
-import com.miso.vinilo.data.model.Musician
-import com.miso.vinilo.data.network.retrofit.MusicianApi
+import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.data.adapter.retrofit.MusicianApi
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
@@ -18,27 +18,18 @@ sealed class NetworkResult<out T> {
 /**
  * Network service adapter that uses a network API to retrieve musician data.
  * Other classes should call this implementation directly.
- * @property api The [com.miso.vinilo.data.network.retrofit.MusicianApi] instance used to perform network requests.
+ * @property api The [com.miso.vinilo.data.adapter.retrofit.MusicianApi] instance used to perform network requests.
  */
 class NetworkServiceAdapterMusicians(private val api: MusicianApi) {
 
     /**
      * Fetches a list of musicians from the network API.
-     * @return A [NetworkResult] containing a list of [Musician] on success or an [Error].
+     * @return A [NetworkResult] containing a list of [MusicianDto] on success or an [Error].
      */
-    suspend fun getMusicians(): NetworkResult<List<Musician>> {
+    suspend fun getMusicians(): NetworkResult<List<MusicianDto>> {
         return try {
-            val dtos = api.getMusicians()
-            val list = dtos.map { dto ->
-                Musician(
-                    id = dto.id,
-                    name = dto.name,
-                    image = dto.image,
-                    description = dto.description,
-                    birthDate = dto.birthDate
-                )
-            }
-            NetworkResult.Success(list)
+            val dtos: List<MusicianDto> = api.getMusicians()
+            NetworkResult.Success(dtos)
         } catch (e: Exception) {
             NetworkResult.Error("Unknown network error", e)
         }

@@ -39,7 +39,7 @@ import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.viewmodels.MusicianViewModel
-import com.miso.vinilo.data.model.Musician
+import com.miso.vinilo.data.dto.MusicianDto
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,14 +148,14 @@ fun GreetingPreview() {
 fun MusicianScreenPreview() {
     ViniloTheme {
         val sample = listOf(
-            Musician(
+            MusicianDto(
                 id = 100,
                 name = "Adele Laurie Blue Adkins",
                 image = "",
                 description = "Singer",
                 birthDate = "1988-05-05T00:00:00.000Z"
             ),
-            Musician(
+            MusicianDto(
                 id = 101,
                 name = "Metallica",
                 image = "",

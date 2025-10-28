@@ -1,7 +1,7 @@
 package com.miso.vinilo.domain
 
-import com.miso.vinilo.data.model.Musician
-import com.miso.vinilo.data.network.NetworkResult
+import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.repository.MusicianRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,7 +17,7 @@ class MusicianUseCaseTest {
     fun `getMusicians returns success when repository returns success`() = runTest {
         val repo = mockk<MusicianRepository>()
         val expected = listOf(
-            Musician(1, "Adele Laurie Blue Adkins", "", "Singer", "1988-05-05T00:00:00.000Z")
+            MusicianDto(1, "Adele Laurie Blue Adkins", "", "Singer", "1988-05-05T00:00:00.000Z")
         )
         coEvery { repo.getMusicians() } returns NetworkResult.Success(expected)
 
@@ -59,8 +59,8 @@ class MusicianUseCaseTest {
     fun `getMusicians returns multiple musicians when repository returns multiple`() = runTest {
         val repo = mockk<MusicianRepository>()
         val expected = listOf(
-            Musician(1, "Adele", "", "Singer", "1988-05-05T00:00:00.000Z"),
-            Musician(2, "Freddie Mercury", "", "Singer", "1946-09-05T00:00:00.000Z")
+            MusicianDto(1, "Adele", "", "Singer", "1988-05-05T00:00:00.000Z"),
+            MusicianDto(2, "Freddie Mercury", "", "Singer", "1946-09-05T00:00:00.000Z")
         )
         coEvery { repo.getMusicians() } returns NetworkResult.Success(expected)
 

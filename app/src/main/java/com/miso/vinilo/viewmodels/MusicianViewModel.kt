@@ -4,8 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.miso.vinilo.data.model.Musician
-import com.miso.vinilo.data.network.NetworkResult
+import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.domain.MusicianUseCase
 import com.miso.vinilo.domain.MusicianUseCaseImpl
 import kotlinx.coroutines.launch
@@ -43,7 +43,7 @@ class MusicianViewModel(
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
-        data class Success(val data: List<Musician>) : UiState()
+        data class Success(val data: List<MusicianDto>) : UiState()
         data class Error(val message: String) : UiState()
     }
 

@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.miso.vinilo.BuildConfig
-import com.miso.vinilo.data.model.Musician
+import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.viewmodels.MusicianViewModel
 import androidx.compose.ui.platform.LocalContext
@@ -67,7 +67,7 @@ fun MusicianScreen(
 }
 
 @Composable
-private fun MusicianList(musicians: List<Musician>) {
+private fun MusicianList(musicians: List<MusicianDto>) {
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
         // Use stable key to avoid unnecessary row recompositions/rebinds
         items(items = musicians, key = { it.id }) { musician ->
@@ -77,7 +77,7 @@ private fun MusicianList(musicians: List<Musician>) {
 }
 
 @Composable
-private fun MusicianRow(musician: Musician) {
+private fun MusicianRow(musician: MusicianDto) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

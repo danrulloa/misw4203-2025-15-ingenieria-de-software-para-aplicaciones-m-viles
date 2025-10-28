@@ -3,7 +3,7 @@ package com.miso.vinilo.viewmodels
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.ViewModel
 import com.miso.vinilo.domain.MusicianUseCase
-import com.miso.vinilo.data.network.NetworkResult
+import com.miso.vinilo.data.adapter.NetworkResult
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers

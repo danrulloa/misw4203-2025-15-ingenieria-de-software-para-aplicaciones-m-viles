@@ -1,8 +1,8 @@
 package com.miso.vinilo.data.repository
 
-import com.miso.vinilo.data.model.Musician
-import com.miso.vinilo.data.network.NetworkResult
-import com.miso.vinilo.data.network.NetworkServiceAdapterMusicians
+import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.data.adapter.NetworkResult
+import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -20,7 +20,7 @@ class MusicianRepositoryFactoryTest {
     fun `create factory returns repository wired to adapter produced by NetworkServiceAdapterMusicians`() = runTest {
         // Prepare a fake adapter that returns a known success result
         val fakeData = listOf(
-            Musician(10, "Test Artist", "", "desc", "2000-01-01T00:00:00.000Z")
+            MusicianDto(10, "Test Artist", "", "desc", "2000-01-01T00:00:00.000Z")
         )
         val fakeAdapter = mockk<NetworkServiceAdapterMusicians>()
         coEvery { fakeAdapter.getMusicians() } returns NetworkResult.Success(fakeData)
