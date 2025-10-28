@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.miso.vinilo.viewmodels.MusicianViewModelFactory
+import com.miso.vinilo.ui.viewmodels.MusicianViewModelFactory
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
@@ -37,7 +37,7 @@ import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
-import com.miso.vinilo.viewmodels.MusicianViewModel
+import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.repository.MusicianRepository
 

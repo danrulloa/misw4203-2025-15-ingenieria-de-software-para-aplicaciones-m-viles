@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
-import com.miso.vinilo.viewmodels.MusicianViewModel
+import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest
 

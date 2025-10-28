@@ -3,7 +3,7 @@ package com.miso.vinilo.di
 import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.repository.MusicianRepository
-import com.miso.vinilo.viewmodels.MusicianViewModel
+import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 

@@ -1,4 +1,4 @@
-package com.miso.vinilo.viewmodels
+package com.miso.vinilo.ui.viewmodels
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.ViewModel
