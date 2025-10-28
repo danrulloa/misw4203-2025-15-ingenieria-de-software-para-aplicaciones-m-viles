@@ -4,7 +4,7 @@ import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.repository.MusicianRepository
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 // Koin module providing network, repository and ViewModel bindings.
