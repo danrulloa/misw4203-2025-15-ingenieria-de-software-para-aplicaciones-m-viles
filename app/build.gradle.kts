@@ -19,7 +19,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // BuildConfig field to configure the base URL per build type
         // Use the deployed backend URL by default
         buildConfigField("String", "BASE_URL", "\"https://vinyls-backend-8fb6b230b5f0.herokuapp.com/\"")
     }
@@ -31,7 +30,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Override BASE_URL in release if you want a different production endpoint
+
             buildConfigField("String", "BASE_URL", "\"https://vinyls-backend-8fb6b230b5f0.herokuapp.com/\"")
         }
         debug {
