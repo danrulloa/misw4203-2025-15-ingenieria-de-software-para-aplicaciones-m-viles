@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -29,7 +28,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.miso.vinilo.ui.viewmodels.MusicianViewModelFactory
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
@@ -39,7 +37,6 @@ import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.data.dto.MusicianDto
-import com.miso.vinilo.data.repository.MusicianRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,11 +94,9 @@ fun ViniloApp() {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Create the repository + factory + ViewModel when the user navigates to this screen.
-    // Use the viewModel() composable so we don't need to cast an activity from the context.
-    val repository = remember { MusicianRepository.create(BuildConfig.BASE_URL) }
-    val factory = remember(repository) { MusicianViewModelFactory(repository) }
-    val vm: MusicianViewModel = viewModel(factory = factory)
+    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
+    // creates its own repository from BuildConfig, so a factory is no longer necessary.
+    val vm: MusicianViewModel = viewModel()
 
     // Observe LiveData state so the UI recomposes on updates.
     val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
