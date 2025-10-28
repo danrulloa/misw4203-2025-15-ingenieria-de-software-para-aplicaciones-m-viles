@@ -20,23 +20,30 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
 import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
-import com.miso.vinilo.ui.views.artists.ArtistsScreen
+import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
+import com.miso.vinilo.ui.viewmodels.MusicianViewModel
+import com.miso.vinilo.data.dto.MusicianDto
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Do not create controller/VM eagerly here. Create them lazily when the user
+        // navigates to the ARTISTAS screen to avoid unnecessary work at app launch.
         setContent {
             ViniloTheme {
                 ViniloApp()
@@ -45,7 +52,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@PreviewScreenSizes
 @Composable
 fun ViniloApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.INICIO) }
@@ -79,11 +85,31 @@ fun ViniloApp() {
             when (currentDestination) {
                 AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
                 AppDestinations.ALBUMES -> AlbumsScreen(modifier = contentModifier)
-                AppDestinations.ARTISTAS -> ArtistsScreen(modifier = contentModifier)
+                AppDestinations.ARTISTAS -> MusicianScreenHost(modifier = contentModifier)
                 AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
             }
         }
     }
+}
+
+@Composable
+fun MusicianScreenHost(modifier: Modifier = Modifier) {
+    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
+    // creates its own repository from BuildConfig, so a factory is no longer necessary.
+    val vm: MusicianViewModel = viewModel()
+
+    // Observe LiveData state so the UI recomposes on updates.
+    val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+
+    // Trigger loading only when the composable enters composition and the VM is idle.
+    LaunchedEffect(Unit) {
+        if (state is MusicianViewModel.UiState.Idle) {
+            vm.loadMusicians()
+        }
+    }
+
+    // Pass the current state to the screen composable.
+    MusicianScreen(state = state, modifier = modifier)
 }
 
 enum class AppDestinations(
@@ -109,5 +135,32 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 fun GreetingPreview() {
     ViniloTheme {
         Greeting("Android")
+    }
+}
+
+@PreviewScreenSizes
+@Composable
+fun MusicianScreenPreview() {
+    ViniloTheme {
+        val sample = listOf(
+            MusicianDto(
+                id = 100,
+                name = "Adele Laurie Blue Adkins",
+                image = "",
+                description = "Singer",
+                birthDate = "1988-05-05T00:00:00.000Z"
+            ),
+            MusicianDto(
+                id = 101,
+                name = "Metallica",
+                image = "",
+                description = "Band",
+                birthDate = "1981-10-28T00:00:00.000Z"
+            )
+        )
+
+        MusicianScreen(
+            state = MusicianViewModel.UiState.Success(sample)
+        )
     }
 }

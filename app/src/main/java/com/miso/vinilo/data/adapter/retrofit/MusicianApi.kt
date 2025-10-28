@@ -1,4 +1,4 @@
-package com.miso.vinilo.data.network.retrofit
+package com.miso.vinilo.data.adapter.retrofit
 
 import com.miso.vinilo.data.dto.MusicianDto
 import retrofit2.http.GET

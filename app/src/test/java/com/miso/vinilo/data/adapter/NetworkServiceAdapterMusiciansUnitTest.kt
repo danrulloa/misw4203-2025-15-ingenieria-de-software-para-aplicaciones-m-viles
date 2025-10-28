@@ -1,6 +1,6 @@
-package com.miso.vinilo.data.network
+package com.miso.vinilo.data.adapter
 
-import com.miso.vinilo.data.network.retrofit.MusicianApi
+import com.miso.vinilo.data.adapter.retrofit.MusicianApi
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -12,7 +12,7 @@ import java.io.IOException
 class NetworkServiceAdapterMusiciansUnitTest {
 
     private val api = mockk<MusicianApi>()
-    private lateinit var adapter: MusicianServiceAdapter
+    private lateinit var adapter: NetworkServiceAdapterMusicians
 
     @Before
     fun setUp() {
@@ -32,4 +32,3 @@ class NetworkServiceAdapterMusiciansUnitTest {
         assertTrue(err.message.isNotBlank())
     }
 }
-

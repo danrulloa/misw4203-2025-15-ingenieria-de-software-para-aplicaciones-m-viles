@@ -1,4 +1,4 @@
-package com.miso.vinilo.data.network
+package com.miso.vinilo.data.adapter
 
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
