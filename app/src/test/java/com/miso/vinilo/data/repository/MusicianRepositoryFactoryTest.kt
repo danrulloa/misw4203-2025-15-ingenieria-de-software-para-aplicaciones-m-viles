@@ -30,7 +30,7 @@ class MusicianRepositoryFactoryTest {
         every { NetworkServiceAdapterMusicians.create(any()) } returns fakeAdapter
 
         try {
-            val repo = MusicianRepositoryImpl.create("http://example/")
+            val repo = MusicianRepository.create("http://example/")
             // The created repo should delegate to our fake adapter
             val result = repo.getMusicians()
 

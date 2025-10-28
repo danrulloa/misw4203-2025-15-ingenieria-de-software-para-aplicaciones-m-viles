@@ -3,7 +3,6 @@ package com.miso.vinilo.di
 import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.repository.MusicianRepository
-import com.miso.vinilo.data.repository.MusicianRepositoryImpl
 import com.miso.vinilo.domain.MusicianUseCase
 import com.miso.vinilo.domain.MusicianUseCaseImpl
 import com.miso.vinilo.viewmodels.MusicianViewModel
@@ -14,8 +13,8 @@ import org.koin.dsl.module
 val appModule = module {
     // Bind the concrete network adapter directly
     single { NetworkServiceAdapterMusicians.create(BuildConfig.BASE_URL) }
-    // Provide the repository and explicitly request the adapter type so Koin can infer correctly
-    single<MusicianRepository> { MusicianRepositoryImpl(get<NetworkServiceAdapterMusicians>()) }
+    // Provide the concrete repository instance
+    single { MusicianRepository(get<NetworkServiceAdapterMusicians>()) }
     single<MusicianUseCase> { MusicianUseCaseImpl(get<MusicianRepository>()) }
     viewModel { MusicianViewModel(get<MusicianUseCase>()) }
 }

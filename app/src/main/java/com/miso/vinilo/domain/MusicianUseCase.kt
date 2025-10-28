@@ -3,7 +3,6 @@ package com.miso.vinilo.domain
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.repository.MusicianRepository
-import com.miso.vinilo.data.repository.MusicianRepositoryImpl
 
 /**
  * Use-case layer that orchestrates musician-related operations.
@@ -22,6 +21,6 @@ class MusicianUseCaseImpl(
     companion object {
         /** Convenience factory to create a controller wired to the default network repository. */
         fun create(baseUrl: String): MusicianUseCase =
-            MusicianUseCaseImpl(MusicianRepositoryImpl.create(baseUrl))
+            MusicianUseCaseImpl(MusicianRepository.create(baseUrl))
     }
 }

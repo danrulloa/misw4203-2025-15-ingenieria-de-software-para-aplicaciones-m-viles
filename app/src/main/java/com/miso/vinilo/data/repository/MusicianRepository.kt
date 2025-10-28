@@ -5,24 +5,14 @@ import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 
 /**
- * Repository interface that exposes musician-related data operations.
- * The repository depends on a [NetworkServiceAdapterMusicians] for network access.
+ * Concrete repository that exposes musician-related data operations and delegates to a network adapter.
+ * The previous interface `MusicianRepository` was removed; callers should use this concrete class directly.
  */
-interface MusicianRepository {
-    /**
-     * Retrieves a list of musicians. Returns a [NetworkResult] wrapping the list or an error.
-     */
-    suspend fun getMusicians(): NetworkResult<List<MusicianDto>>
-}
-
-/**
- * Default implementation of [MusicianRepository] that delegates to a [NetworkServiceAdapterMusicians].
- */
-class MusicianRepositoryImpl(
+class MusicianRepository(
     private val serviceAdapter: NetworkServiceAdapterMusicians
-) : MusicianRepository {
+) {
 
-    override suspend fun getMusicians(): NetworkResult<List<MusicianDto>> {
+    suspend fun getMusicians(): NetworkResult<List<MusicianDto>> {
         return serviceAdapter.getMusicians()
     }
 
@@ -32,6 +22,6 @@ class MusicianRepositoryImpl(
          * @param baseUrl Base URL for the Retrofit service (e.g. "http://localhost:3000/")
          */
         fun create(baseUrl: String): MusicianRepository =
-            MusicianRepositoryImpl(NetworkServiceAdapterMusicians.create(baseUrl))
+            MusicianRepository(NetworkServiceAdapterMusicians.create(baseUrl))
     }
 }

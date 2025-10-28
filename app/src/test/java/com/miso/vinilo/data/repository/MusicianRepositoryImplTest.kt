@@ -20,7 +20,7 @@ class MusicianRepositoryImplTest {
         )
         coEvery { adapter.getMusicians() } returns NetworkResult.Success(expected)
 
-        val repo = MusicianRepositoryImpl(adapter)
+        val repo = MusicianRepository(adapter)
         val result = repo.getMusicians()
 
         assertTrue(result is NetworkResult.Success)
@@ -33,7 +33,7 @@ class MusicianRepositoryImplTest {
         val adapter = mockk<NetworkServiceAdapterMusicians>()
         coEvery { adapter.getMusicians() } returns NetworkResult.Error("network failure")
 
-        val repo = MusicianRepositoryImpl(adapter)
+        val repo = MusicianRepository(adapter)
         val result = repo.getMusicians()
 
         assertTrue(result is NetworkResult.Error)
