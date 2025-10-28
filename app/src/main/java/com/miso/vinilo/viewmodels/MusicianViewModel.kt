@@ -6,16 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.adapter.NetworkResult
-import com.miso.vinilo.domain.MusicianUseCase
-import com.miso.vinilo.domain.MusicianUseCaseImpl
+import com.miso.vinilo.data.repository.MusicianRepository
 import kotlinx.coroutines.launch
 
 /**
  * ViewModel that exposes musician list state to the UI.
- * It depends on a `MusicianController` abstraction so it can be easily tested.
+ * It now depends directly on [MusicianRepository].
  */
 class MusicianViewModel(
-    private val controller: MusicianUseCase
+    private val repository: MusicianRepository
 ) : ViewModel() {
 
     private val _state = MutableLiveData<UiState>(UiState.Idle)
@@ -30,7 +29,7 @@ class MusicianViewModel(
     fun loadMusicians() {
         viewModelScope.launch {
             _state.value = UiState.Loading
-            when (val result = controller.getMusicians()) {
+            when (val result = repository.getMusicians()) {
                 is NetworkResult.Success -> _state.value = UiState.Success(result.data)
                 is NetworkResult.Error -> _state.value = UiState.Error(result.message)
             }
@@ -49,7 +48,7 @@ class MusicianViewModel(
 
     /**
      * Convenience secondary constructor to quickly create a ViewModel wired to the network
-     * implementation. Prefer passing a `MusicianController` in production (DI) or tests.
+     * implementation. Prefer passing a repository in production (DI) or tests.
      */
-    constructor(baseUrl: String) : this(MusicianUseCaseImpl.create(baseUrl))
+    constructor(baseUrl: String) : this(MusicianRepository.create(baseUrl))
 }

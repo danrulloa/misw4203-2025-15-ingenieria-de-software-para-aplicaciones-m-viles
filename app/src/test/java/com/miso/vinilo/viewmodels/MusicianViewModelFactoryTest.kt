@@ -2,7 +2,7 @@ package com.miso.vinilo.viewmodels
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.ViewModel
-import com.miso.vinilo.domain.MusicianUseCase
+import com.miso.vinilo.data.repository.MusicianRepository
 import com.miso.vinilo.data.adapter.NetworkResult
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -39,11 +39,11 @@ class MusicianViewModelFactoryTest {
 
     @Test
     fun `create returns MusicianViewModel when given MusicianViewModel class`() = runTest {
-        val controller = mockk<MusicianUseCase>(relaxed = true)
+        val repo = mockk<MusicianRepository>(relaxed = true)
         // Ensure any suspend call used by init/fetchMusicians is handled
-        coEvery { controller.getMusicians() } returns NetworkResult.Success(emptyList())
+        coEvery { repo.getMusicians() } returns NetworkResult.Success(emptyList())
 
-        val factory = MusicianViewModelFactory(controller)
+        val factory = MusicianViewModelFactory(repo)
         val vm = factory.create(MusicianViewModel::class.java)
 
         assertEquals(MusicianViewModel::class.java, vm::class.java)
@@ -51,8 +51,8 @@ class MusicianViewModelFactoryTest {
 
     @Test
     fun `create throws for unknown ViewModel class`() {
-        val controller = mockk<MusicianUseCase>(relaxed = true)
-        val factory = MusicianViewModelFactory(controller)
+        val repo = mockk<MusicianRepository>(relaxed = true)
+        val factory = MusicianViewModelFactory(repo)
 
         // Use a ViewModel subclass that is not MusicianViewModel to satisfy the generic bound
         class OtherViewModel : ViewModel()

@@ -1,9 +1,9 @@
 package com.miso.vinilo.viewmodels
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.miso.vinilo.domain.MusicianUseCase
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.adapter.NetworkResult
+import com.miso.vinilo.data.repository.MusicianRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -38,14 +38,14 @@ class MusicianViewModelTest {
     }
 
     @Test
-    fun `loadMusicians updates state to Success when controller returns success`() = runTest {
+    fun `loadMusicians updates state to Success when repository returns success`() = runTest {
         val expected = listOf(
             MusicianDto(1, "Adele", "", "Singer", "1988-05-05T00:00:00.000Z")
         )
-        val controller = mockk<MusicianUseCase>()
-        coEvery { controller.getMusicians() } returns NetworkResult.Success(expected)
+        val repo = mockk<MusicianRepository>()
+        coEvery { repo.getMusicians() } returns NetworkResult.Success(expected)
 
-        val vm = MusicianViewModel(controller)
+        val vm = MusicianViewModel(repo)
 
         // call the explicit load function introduced in the refactor
         vm.loadMusicians()
@@ -60,11 +60,11 @@ class MusicianViewModelTest {
     }
 
     @Test
-    fun `loadMusicians updates state to Error when controller returns error`() = runTest {
-        val controller = mockk<MusicianUseCase>()
-        coEvery { controller.getMusicians() } returns NetworkResult.Error("fail")
+    fun `loadMusicians updates state to Error when repository returns error`() = runTest {
+        val repo = mockk<MusicianRepository>()
+        coEvery { repo.getMusicians() } returns NetworkResult.Error("fail")
 
-        val vm = MusicianViewModel(controller)
+        val vm = MusicianViewModel(repo)
 
         vm.loadMusicians()
 

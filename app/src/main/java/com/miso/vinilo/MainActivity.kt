@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.miso.vinilo.domain.MusicianUseCaseImpl
 import com.miso.vinilo.viewmodels.MusicianViewModelFactory
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
@@ -40,6 +39,7 @@ import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.viewmodels.MusicianViewModel
 import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.data.repository.MusicianRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,10 +97,10 @@ fun ViniloApp() {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Create the controller + factory + ViewModel when the user navigates to this screen.
+    // Create the repository + factory + ViewModel when the user navigates to this screen.
     // Use the viewModel() composable so we don't need to cast an activity from the context.
-    val controller = remember { MusicianUseCaseImpl.create(BuildConfig.BASE_URL) }
-    val factory = remember(controller) { MusicianViewModelFactory(controller) }
+    val repository = remember { MusicianRepository.create(BuildConfig.BASE_URL) }
+    val factory = remember(repository) { MusicianViewModelFactory(repository) }
     val vm: MusicianViewModel = viewModel(factory = factory)
 
     // Observe LiveData state so the UI recomposes on updates.
