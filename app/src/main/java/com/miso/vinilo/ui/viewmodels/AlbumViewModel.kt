@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.repository.AlbumRepository
@@ -46,4 +47,16 @@ class AlbumViewModel(
         data class Error(val message: String) : UiState()
     }
 
+    /**
+     * Convenience secondary constructor to quickly create a ViewModel wired to the network
+     * implementation. Prefer passing a repository in production (DI) or tests.
+     */
+    constructor(baseUrl: String) : this(AlbumRepository.create(baseUrl))
+
+    /**
+     * No-arg constructor so the default ViewModelProvider (or Compose's viewModel()) can
+     * instantiate this ViewModel without a factory. It delegates to the repository created
+     * from the app BuildConfig base URL.
+     */
+    constructor() : this(AlbumRepository.create(BuildConfig.BASE_URL))
 }
