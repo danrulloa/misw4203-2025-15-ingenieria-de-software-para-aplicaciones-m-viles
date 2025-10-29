@@ -5,7 +5,7 @@ import com.miso.vinilo.data.adapter.NetworkServiceAdapterAlbums
 import com.miso.vinilo.data.dto.AlbumDto
 
 /**
- * Concrete repository that exposes musician-related data operations and delegates to a network adapter.
+ * Concrete repository that exposes album-related data operations and delegates to a network adapter.
  * The previous interface `AlbumRepository` was removed; callers should use this concrete class directly.
  */
 class AlbumRepository(
