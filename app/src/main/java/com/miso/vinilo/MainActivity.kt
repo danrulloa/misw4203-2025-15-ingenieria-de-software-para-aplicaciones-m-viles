@@ -36,8 +36,9 @@ import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
+import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.data.dto.MusicianDto
-
+import com.miso.vinilo.data.dto.AlbumDto
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,12 +85,32 @@ fun ViniloApp() {
             val contentModifier = Modifier.padding(innerPadding)
             when (currentDestination) {
                 AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
-                AppDestinations.ALBUMES -> AlbumsScreen(modifier = contentModifier)
+                AppDestinations.ALBUMES -> AlbumScreenHost(modifier = contentModifier)
                 AppDestinations.ARTISTAS -> MusicianScreenHost(modifier = contentModifier)
                 AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
             }
         }
     }
+}
+
+@Composable
+fun AlbumScreenHost(modifier: Modifier = Modifier) {
+    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
+    // creates its own repository from BuildConfig, so a factory is no longer necessary.
+    val vm: AlbumViewModel = viewModel()
+
+    // Observe LiveData state so the UI recomposes on updates.
+    val state by vm.state.observeAsState(AlbumViewModel.UiState.Idle)
+
+    // Trigger loading only when the composable enters composition and the VM is idle.
+    LaunchedEffect(Unit) {
+        if (state is AlbumViewModel.UiState.Idle) {
+            vm.loadAlbums()
+        }
+    }
+
+    // Pass the current state to the screen composable.
+    AlbumsScreen(state = state, modifier = modifier)
 }
 
 @Composable
@@ -135,6 +156,46 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 fun GreetingPreview() {
     ViniloTheme {
         Greeting("Android")
+    }
+}
+
+@PreviewScreenSizes
+@Composable
+fun AlbumScreenPreview() {
+    ViniloTheme {
+        val sample = listOf(
+            AlbumDto(
+                id = 100,
+                name = "Buscando América",
+                cover = "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+                releaseDate = "1984-08-01T00:00:00.000Z",
+                description = "Buscando América es el primer álbum de la banda de Rubén Blades y Seis del Solar lanzado en 1984. La producción, bajo el sello Elektra, fusiona diferentes ritmos musicales tales como la salsa, reggae, rock, y el jazz latino. El disco fue grabado en Eurosound Studios en Nueva York entre mayo y agosto de 1983.",
+                genre = "Salsa",
+                recordLabel = "Elektra"
+            ),
+            AlbumDto(
+                id = 101,
+                name = "Poeta del pueblo",
+                cover = "https://cdn.shopify.com/s/files/1/0275/3095/products/image_4931268b-7acf-4702-9c55-b2b3a03ed999_1024x1024.jpg",
+                releaseDate = "1984-08-01T00:00:00.000Z",
+                description = "Poeta del pueblo es el primer álbum de estudio de Rubén Blades lanzado en 1984. La producción, bajo el sello Elektra, fusiona diferentes ritmos musicales tales como la salsa, reggae, rock, y el jazz latino.",
+                genre = "Salsa",
+                recordLabel = "Elektra"
+            ),
+            AlbumDto(
+                id = 102,
+                name = "A Day at the Races",
+                cover = "https://i.pinimg.com/564x/ab/50/f1/ab50f1be010a3b5e981207a97e00f8ca.jpg",
+                releaseDate = "1976-12-10T00:00:00.000Z",
+                description = "A Day at the Races es el quinto álbum de estudio de la banda de rock británica Queen. Fue lanzado el 10 de diciembre de 1976 por EMI Records en el Reino Unido y por Elektra Records en los Estados Unidos.",
+                genre = "Rock",
+                recordLabel = "EMI"
+            )
+        )
+
+        AlbumsScreen(
+            state = AlbumViewModel.UiState.Success(sample)
+        )
     }
 }
 
