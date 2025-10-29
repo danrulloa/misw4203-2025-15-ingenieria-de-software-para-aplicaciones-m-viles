@@ -96,4 +96,8 @@ dependencies {
     // Koin test helpers
     testImplementation("io.insert-koin:koin-test:4.1.1")
     testImplementation("io.insert-koin:koin-test-junit4:4.1.1")
+    // Junit and Espresso config
+    testImplementation("junit:junit:4.12")
+    androidTestImplementation("com.android.support.test:runner:1.0.1")
+    androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1")
 }
