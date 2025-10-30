@@ -19,22 +19,21 @@ class MainActivityTest {
 
     @Test
     fun homeScreen_showsTextsLogoAndDropdownOptions() {
-        // La MainActivity ya infla su propio contenido, no es necesario un setContent aquí.
 
-        // Verificar título y subtítulo
+        // checking title and sub-title
         composeTestRule.onNodeWithText("Bienvenido a Vinilo").assertIsDisplayed()
         composeTestRule.onNodeWithText("Seleccione su rol para continuar").assertIsDisplayed()
 
-        // Verificar que el logo (contentDescription = "Logo") está visible
+        // check logo is displayed
         composeTestRule.onNodeWithContentDescription("Logo").assertIsDisplayed()
 
-        // Verificar dropdown: valor por defecto - usar la primera aparición de "Usuario"
+        // check dropdown: default value is "Usuario"
         composeTestRule.onAllNodesWithText("Usuario")[0].assertIsDisplayed()
 
-        // Intentar abrir el dropdown haciendo click sobre el campo (primera aparición)
+        // open dropdown clicking over the field
         composeTestRule.onAllNodesWithText("Usuario")[0].performClick()
 
-        // Comprobar que la opción "Coleccionista" aparece después del click
+        // checking option = "Coleccionista" appears after click
         composeTestRule.onNodeWithText("Coleccionista").assertIsDisplayed()
     }
 }
