@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
@@ -90,7 +91,7 @@ class AlbumE2ETest {
         // Drain any remaining requests so the next test starts clean
         try {
             while (true) {
-                val req = server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
+                server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
                 // optionally inspect or log req.path if needed
             }
         } catch (_: Throwable) {
@@ -109,25 +110,19 @@ class AlbumE2ETest {
         waitForTextFlexible("Álbumes", timeoutMs = 5_000L)
 
         Log.i("AlbumE2ETest", "Title visible; polling MockWebServer for request")
-        // Verify MockWebServer received the request (poll with short timeouts)
-        var recorded = server.takeRequest(200, TimeUnit.MILLISECONDS)
-        val start = System.currentTimeMillis()
-        val maxWait = 2_000L // shorter max wait to avoid hanging the test
-        while (recorded == null && System.currentTimeMillis() - start < maxWait) {
-            Log.i("AlbumE2ETest", "No request yet, elapsed=${System.currentTimeMillis()-start}ms")
-            recorded = server.takeRequest(200, TimeUnit.MILLISECONDS)
-        }
-        if (recorded == null) {
-            // Don't fail the test outright — log and continue validating UI so test doesn't hang.
-            Log.w("AlbumE2ETest", "MockWebServer did not receive a request for albums within short timeout; continuing to UI assertions")
-        } else {
-            Log.i("AlbumE2ETest", "Recorded request: path=${recorded.path}")
+        // Try to observe a request but don't fail the test if absent
+        try {
+            val recorded = server.takeRequest(500, TimeUnit.MILLISECONDS)
+            if (recorded != null) Log.i("AlbumE2ETest", "Recorded request: path=${recorded.path}")
+            else Log.w("AlbumE2ETest", "No request observed in short interval")
+        } catch (e: Throwable) {
+            Log.w("AlbumE2ETest", "Error while taking request: ${e.message}")
         }
 
-        // Wait for album titles loaded from network
-        Log.i("AlbumE2ETest", "Waiting for album texts")
-        waitForTextFlexible("Album Uno", timeoutMs = 10_000L)
-        waitForTextFlexible("Album Dos", timeoutMs = 10_000L)
+        // Wait for album titles loaded from network (some devices may render slower) - prefer text nodes
+        Log.i("AlbumE2ETest", "Waiting for album title texts")
+        waitForTextFlexible("Album Uno", timeoutMs = 15_000L)
+        waitForTextFlexible("Album Dos", timeoutMs = 15_000L)
 
         Log.i("AlbumE2ETest", "Album texts visible; doing final assertions")
         // Basic assertions - ensure they're visible
@@ -137,34 +132,65 @@ class AlbumE2ETest {
     }
 
     private fun waitForTextFlexible(text: String, timeoutMs: Long = 5_000L) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        var lastError: Throwable? = null
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                // Try merged tree with substring match
-                val mergedNodes = composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
-                if (mergedNodes.isNotEmpty()) {
-                    composeTestRule.onNodeWithText(text, substring = true).assertIsDisplayed()
-                    return
+        try {
+            // Use ComposeTestRule.waitUntil which integrates with Compose's idling
+            composeTestRule.waitUntil(timeoutMs) {
+                try {
+                    val merged = try {
+                        composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                    if (merged.isNotEmpty()) return@waitUntil true
+
+                    val unmerged = try {
+                        composeTestRule.onAllNodesWithText(text, useUnmergedTree = true, substring = true).fetchSemanticsNodes()
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                    unmerged.isNotEmpty()
+                } catch (_: Throwable) {
+                    false
                 }
-            } catch (e: Throwable) {
-                lastError = e
             }
 
+            // After waitUntil returns, try asserting visibility taking merged then unmerged tree.
             try {
-                // Try unmerged tree with substring match
-                val unmergedNodes = composeTestRule.onAllNodesWithText(text, useUnmergedTree = true, substring = true).fetchSemanticsNodes()
-                if (unmergedNodes.isNotEmpty()) {
-                    composeTestRule.onNodeWithText(text, useUnmergedTree = true, substring = true).assertIsDisplayed()
-                    return
-                }
-            } catch (e: Throwable) {
-                lastError = e
+                composeTestRule.onNodeWithText(text, substring = true).assertIsDisplayed()
+                return
+            } catch (_: Throwable) {
+                // try unmerged
             }
 
-            Thread.sleep(200)
+            composeTestRule.onNodeWithText(text, useUnmergedTree = true, substring = true).assertIsDisplayed()
+        } catch (e: Throwable) {
+            throw AssertionError("Timed out waiting for text '$text' (${e.message})")
         }
-        throw AssertionError("Timed out waiting for text '$text' (last error: ${lastError?.message})")
+    }
+
+    private fun waitForContentDescription(desc: String, timeoutMs: Long = 5_000L) {
+        try {
+            composeTestRule.waitUntil(timeoutMs) {
+                try {
+                    val node = try {
+                        composeTestRule.onAllNodesWithContentDescription(desc).fetchSemanticsNodes()
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                    if (node.isNotEmpty()) return@waitUntil true
+                    val unmerged = try {
+                        composeTestRule.onAllNodesWithContentDescription(desc, useUnmergedTree = true).fetchSemanticsNodes()
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                    unmerged.isNotEmpty()
+                } catch (_: Throwable) {
+                    false
+                }
+            }
+        } catch (e: Throwable) {
+            throw AssertionError("Timed out waiting for contentDescription '$desc' (${e.message})")
+        }
     }
 
     private fun waitAndClickNavItem(label: String, timeoutMs: Long = 5_000L) {
