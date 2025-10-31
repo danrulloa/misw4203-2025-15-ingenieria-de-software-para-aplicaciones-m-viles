@@ -97,14 +97,20 @@ Este documento describe, paso a paso, cómo preparar el ambiente de **desarrollo
 Dentro de la carpeta del proyecto:
 
 Linux / macOS:
+```
 ./gradlew assembleDebug
+```
 
 Windows:
+```
 gradlew.bat assembleDebug
+```
 
 El APK quedará normalmente en:
 
+```
 app/build/outputs/apk/debug/app-debug.apk
+```
 
 Ese APK lo puedes instalar **manualmente** en un dispositivo Android.
 
@@ -118,19 +124,27 @@ El objetivo del repo suele incluir **pruebas unitarias** y **pruebas instrumenta
 
 Se ejecutan en la máquina local, **sin emulador**:
 
+```
 ./gradlew test
+```
 
 Buscan las pruebas en:
+```
 app/src/test/...
+```
 
 ### 7.2 Pruebas instrumentadas (en dispositivo/emulador)
 
 Se ejecutan dentro de un dispositivo Android real o emulador:
 
+```
 ./gradlew connectedAndroidTest
+```
 
 Buscan las pruebas en:
+```
 app/src/androidTest/...
+```
 
 Requiere tener:
 - un **emulador corriendo**, o
@@ -138,7 +152,29 @@ Requiere tener:
 
 ---
 
-## 8. Enlaces de interés
+## 8. Instalar el APK generado en el release
+
+Al release se entrega se adjunta un APK que puede descargar y seguir estos pasos:
+
+1. Abrir el APK desde su lugar de descarga en su telefono:
+
+![WhatsApp Image 2025-10-31 at 10 01 26 (3)](https://github.com/user-attachments/assets/0abd62f0-e998-4cce-b1a1-f1e560e282e7)
+
+2. Hacer click en "Scan app"
+
+Una vez termine de escanear, el resultado será que la aplicación es segura.
+
+![WhatsApp Image 2025-10-31 at 10 01 26 (2)](https://github.com/user-attachments/assets/0d4925d0-0118-4e4c-91a7-50144b787d1d)
+![WhatsApp Image 2025-10-31 at 10 01 26 (1)](https://github.com/user-attachments/assets/7f40214d-ff6c-40de-9edf-a79e8982a4fa)
+
+3. Una vez en su telefono la podrá empezar a usar:
+
+
+https://github.com/user-attachments/assets/e80b5b79-f49a-41cf-8d6d-779f9d4862c5
+
+
+
+## 9. Enlaces de interés
 
 - Android Studio (oficial, ES): https://developer.android.com/studio?hl=es-419
 - Kotlin en Android: https://developer.android.com/kotlin?hl=es-419
@@ -147,6 +183,7 @@ Requiere tener:
 - Gradle para Android: https://developer.android.com/studio/build?hl=es-419
 
 ---
+
 
 
 
