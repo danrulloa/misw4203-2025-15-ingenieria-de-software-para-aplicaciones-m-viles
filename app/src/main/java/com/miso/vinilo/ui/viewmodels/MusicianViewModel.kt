@@ -4,10 +4,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.repository.MusicianRepository
+import com.miso.vinilo.data.adapter.NetworkConfig
 import kotlinx.coroutines.launch
 
 /**
@@ -55,8 +55,8 @@ class MusicianViewModel(
 
     /**
      * No-arg constructor so the default ViewModelProvider (or Compose's viewModel()) can
-     * instantiate this ViewModel without a factory. It delegates to the repository created
-     * from the app BuildConfig base URL.
+     * instantiate this ViewModel without a factory. It now delegates to the repository
+     * created from the mutable NetworkConfig so tests can override the base URL at runtime.
      */
-    constructor() : this(MusicianRepository.create(BuildConfig.BASE_URL))
+    constructor() : this(MusicianRepository.create(NetworkConfig.baseUrl))
 }
