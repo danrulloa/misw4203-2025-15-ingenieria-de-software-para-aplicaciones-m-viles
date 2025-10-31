@@ -90,7 +90,11 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:4.1.1")
 
     // Test dependencies: MockWebServer and coroutines test
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.2.1")
+    // Use MockWebServer 4.9.3 to match OkHttp 4.x (5.x requires OkHttp 5 runtime which can cause NoClassDefFoundError)
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+    // Ensure OkHttp 4.x is available for androidTest runtime
+    androidTestImplementation("com.squareup.okhttp3:okhttp:4.9.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     // MockK for unit tests
     testImplementation("io.mockk:mockk:1.14.6")
