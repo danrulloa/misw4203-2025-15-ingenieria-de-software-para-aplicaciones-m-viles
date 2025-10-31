@@ -5,7 +5,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
@@ -183,31 +182,6 @@ class MusicianE2ETest {
             }
         } catch (e: Throwable) {
             throw AssertionError("Timed out waiting for text '${'$'}text' (${e.message})")
-        }
-    }
-
-    private fun waitForContentDescription(desc: String, timeoutMs: Long = 5_000L) {
-        try {
-            composeTestRule.waitUntil(timeoutMs) {
-                try {
-                    val node = try {
-                        composeTestRule.onAllNodesWithContentDescription(desc).fetchSemanticsNodes()
-                    } catch (_: Throwable) {
-                        emptyList()
-                    }
-                    if (node.isNotEmpty()) return@waitUntil true
-                    val unmerged = try {
-                        composeTestRule.onAllNodesWithContentDescription(desc, useUnmergedTree = true).fetchSemanticsNodes()
-                    } catch (_: Throwable) {
-                        emptyList()
-                    }
-                    unmerged.isNotEmpty()
-                } catch (_: Throwable) {
-                    false
-                }
-            }
-        } catch (e: Throwable) {
-            throw AssertionError("Timed out waiting for contentDescription '${'$'}desc' (${e.message})")
         }
     }
 
