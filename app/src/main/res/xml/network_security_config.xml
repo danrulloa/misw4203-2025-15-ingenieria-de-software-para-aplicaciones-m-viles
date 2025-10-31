@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Deny cleartext by default -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Allow cleartext only for the emulator host that maps to localhost on the host machine -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Also allow cleartext for loopback addresses used by MockWebServer in instrumentation tests -->
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
