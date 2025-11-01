@@ -30,15 +30,17 @@ jobs:
       - name: Accept SDK licenses & install required packages
         shell: bash
         run: |
-          yes | sdkmanager --licenses
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          set -o pipefail
+      
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-34" \
             "build-tools;34.0.0" \
             "emulator" \
             "system-images;android-34;google_apis;x86_64"
-          # añade el binario 'emulator' al PATH por si acaso
-          echo "$ANDROID_HOME/emulator" >> $GITHUB_PATH
+          echo "${ANDROID_HOME}/emulator" >> "$GITHUB_PATH
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
