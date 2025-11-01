@@ -27,20 +27,23 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Accept SDK licenses & install required packages
+      - name: Accept SDK licenses
         shell: bash
         run: |
           set +o pipefail
           yes | sdkmanager --licenses >/dev/null || true
           set -o pipefail
-      
+          
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
           sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "emulator" \
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0" "emulator" \
             "system-images;android-34;google_apis;x86_64"
-          echo "${ANDROID_HOME}/emulator" >> "$GITHUB_PATH
+
+          printf '%s\n' "${ANDROID_HOME}/emulator" >> "$GITHUB_PATH"
+
+          ls -la "${ANDROID_HOME}/emulator" || true
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
