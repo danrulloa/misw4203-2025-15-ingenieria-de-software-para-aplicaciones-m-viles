@@ -57,27 +57,42 @@ jobs:
 
       # 2. Crear AVD
       - name: Create AVD
+        shell: bash
+        env:
+          ANDROID_AVD_HOME: $HOME/.android/avd
+          ANDROID_SDK_HOME: $HOME
         run: |
-          avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_4" --force
+          mkdir -p "$ANDROID_AVD_HOME"
+          # A veces avdmanager pregunta por "Do you wish to create a custom hardware profile?"
+          yes | avdmanager create avd \
+            -n test \
+            -k "system-images;android-34;google_apis;x86_64" \
+            --device "pixel_4" \
+            --force
+          # Verificaciones útiles
+          avdmanager list avd || true
+          "${ANDROID_HOME}/emulator/emulator" -list-avds || true
+          ls -la "$ANDROID_AVD_HOME" || true
 
       # 3. Arrancar emulador (sin aceleración HW y sin ventana)
       - name: Start emulator
-        timeout-minutes: 15
+        shell: bash
+        timeout-minutes: 20
+        env:
+          ANDROID_AVD_HOME: $HOME/.android/avd
+          ANDROID_SDK_HOME: $HOME
         run: |
           adb start-server
-          "$ANDROID_HOME/emulator/emulator" -avd test \
-            -no-snapshot -noaudio -no-window -gpu swiftshader_indirect \
-            -no-boot-anim -accel off \
+          "${ANDROID_HOME}/emulator/emulator" -avd test \
+            -no-window -noaudio -no-snapshot -no-boot-anim \
+            -gpu swiftshader_indirect -accel off \
             -netdelay none -netspeed full &
           adb wait-for-device
-          # Esperar a que termine de bootear
-          boot_completed=""
-          until [[ "$boot_completed" == "1" ]]; do
+          # Esperar boot
+          until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
             sleep 2
-            boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
           done
-          # Desbloquear
-          adb shell input keyevent 82
+          adb shell input keyevent 82 || true
 
       # 4. Tests instrumentados (Espresso)
       - name: Run Android Instrumented Tests (Espresso)
