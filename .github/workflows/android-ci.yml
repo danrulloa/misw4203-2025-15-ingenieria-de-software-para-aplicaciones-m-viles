@@ -10,8 +10,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
-    # Necesitamos permisos de hardware para el emulador
     permissions:
       contents: read
 
@@ -29,36 +27,58 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept SDK licenses & install required packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "emulator" \
+            "system-images;android-34;google_apis;x86_64"
+          # añade el binario 'emulator' al PATH por si acaso
+          echo "$ANDROID_HOME/emulator" >> $GITHUB_PATH
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Download dependencies
         run: ./gradlew --no-daemon dependencies
 
-      # 1. Tests unitarios (rápidos, sin emulador)
+      # 1. Tests unitarios
       - name: Run unit tests
         run: ./gradlew --no-daemon test
 
-      # 2. Configurar y levantar emulador para Espresso
+      # 2. Crear AVD
       - name: Create AVD
         run: |
-          sdkmanager --install "system-images;android-34;google_apis;x86_64"
           avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_4" --force
 
+      # 3. Arrancar emulador (sin aceleración HW y sin ventana)
       - name: Start emulator
+        timeout-minutes: 15
         run: |
-          nohup emulator -avd test -no-snapshot -noaudio -no-window -gpu swiftshader_indirect -no-boot-anim &
+          adb start-server
+          "$ANDROID_HOME/emulator/emulator" -avd test \
+            -no-snapshot -noaudio -no-window -gpu swiftshader_indirect \
+            -no-boot-anim -accel off \
+            -netdelay none -netspeed full &
           adb wait-for-device
-          # a veces tarda en estar listo
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+          # Esperar a que termine de bootear
+          boot_completed=""
+          until [[ "$boot_completed" == "1" ]]; do
+            sleep 2
+            boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+          done
+          # Desbloquear
           adb shell input keyevent 82
-        timeout-minutes: 5
 
-      # 3. Tests instrumentados / Espresso
+      # 4. Tests instrumentados (Espresso)
       - name: Run Android Instrumented Tests (Espresso)
         run: ./gradlew --no-daemon connectedAndroidTest
 
-      # (opcional) publicar reportes
+      # Reportes
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
