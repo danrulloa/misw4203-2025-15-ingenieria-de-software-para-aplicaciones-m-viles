@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.miso.vinilo"
-        minSdk = 31
+        minSdk = 21
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -43,6 +43,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // Enable core library desugaring so java.time (and other JDK APIs) are available on older APIs
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -107,4 +109,13 @@ dependencies {
     testImplementation("junit:junit:4.12")
     androidTestImplementation("com.android.support.test:runner:1.0.1")
     androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1")
+
+    // Core library desugaring to support java.time on older Android versions
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+
+    // Conscrypt to provide an up-to-date TLS provider / truststore on older Android versions
+    implementation("org.conscrypt:conscrypt-android:2.5.2")
+
+    // Google Play Services Base (contains ProviderInstaller)
+    implementation("com.google.android.gms:play-services-base:18.2.0")
 }
