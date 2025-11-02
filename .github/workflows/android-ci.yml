@@ -1,4 +1,3 @@
-# .github/workflows/android-ci.yml
 name: Android CI
 
 on:
@@ -10,8 +9,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
-    # Necesitamos permisos de hardware para el emulador
     permissions:
       contents: read
 
@@ -29,36 +26,89 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept SDK licenses
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          set -o pipefail
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          sdkmanager --install \
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0" "emulator" \
+            "system-images;android-34;google_apis;x86_64"
+
+          printf '%s\n' "${ANDROID_HOME}/emulator" >> "$GITHUB_PATH"
+
+          ls -la "${ANDROID_HOME}/emulator" || true
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Download dependencies
         run: ./gradlew --no-daemon dependencies
 
-      # 1. Tests unitarios (rápidos, sin emulador)
+      # 1. Tests unitarios
       - name: Run unit tests
         run: ./gradlew --no-daemon test
 
-      # 2. Configurar y levantar emulador para Espresso
+      # 2. Crear AVD
       - name: Create AVD
+        shell: bash
+        env:
+          ANDROID_AVD_HOME: $HOME/.android/avd
+          ANDROID_SDK_HOME: $HOME
         run: |
-          sdkmanager --install "system-images;android-34;google_apis;x86_64"
-          avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_4" --force
+          mkdir -p "$ANDROID_AVD_HOME"
+          
+          # Evita que el SIGPIPE de "echo|avdmanager" tumbe el step
+          set +o pipefail
+          # Si avdmanager pregunta por custom hardware profile, respondemos "no".
+          echo no | avdmanager create avd \
+            -n test \
+            -k "system-images;android-34;google_apis;x86_64" \
+            --device "pixel_4" \
+            --force || true
+          set -o pipefail
+          
+          # Verificación: debe listar "test"
+          "${ANDROID_HOME}/emulator/emulator" -list-avds
+          
+          # Falla explícita si el AVD no quedó creado correctamente
+          test -f "$ANDROID_AVD_HOME/test.ini" -a -f "$ANDROID_AVD_HOME/test.avd/config.ini" || {
+            echo "ERROR: El AVD 'test' no se creó correctamente."
+            ls -la "$ANDROID_AVD_HOME" || true
+            exit 1
+          }
 
+
+      # 3. Arrancar emulador (sin aceleración HW y sin ventana)
       - name: Start emulator
+        shell: bash
+        timeout-minutes: 20
+        env:
+          ANDROID_AVD_HOME: $HOME/.android/avd
+          ANDROID_SDK_HOME: $HOME
         run: |
-          nohup emulator -avd test -no-snapshot -noaudio -no-window -gpu swiftshader_indirect -no-boot-anim &
+          adb start-server
+          "${ANDROID_HOME}/emulator/emulator" -avd test \
+            -no-window -noaudio -no-snapshot -no-boot-anim \
+            -gpu swiftshader_indirect -accel off \
+            -netdelay none -netspeed full &
           adb wait-for-device
-          # a veces tarda en estar listo
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-          adb shell input keyevent 82
-        timeout-minutes: 5
+          # Esperar boot
+          until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
+            sleep 2
+          done
+          adb shell input keyevent 82 || true
 
-      # 3. Tests instrumentados / Espresso
+      # 4. Tests instrumentados (Espresso)
       - name: Run Android Instrumented Tests (Espresso)
         run: ./gradlew --no-daemon connectedAndroidTest
 
-      # (opcional) publicar reportes
+      # Reportes
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4

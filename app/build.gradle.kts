@@ -109,7 +109,6 @@ dependencies {
     testImplementation("junit:junit:4.12")
     androidTestImplementation("com.android.support.test:runner:1.0.1")
     androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1")
-
     // Core library desugaring to support java.time on older Android versions
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 
