@@ -1,35 +1,19 @@
 package com.miso.vinilo.ui.views.collectors
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.dto.CollectorDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
@@ -83,52 +67,18 @@ private fun CollectorRow(collector: CollectorDto) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
-            .height(IntrinsicSize.Min),
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar circular con iniciales (el API no retorna imagen para coleccionistas)
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(Color.Gray),
-            contentAlignment = Alignment.Center
-        ) {
-            // Mostrar iniciales del nombre
-            val initials = collector.name.split(" ")
-                .mapNotNull { it.firstOrNull()?.toString() }
-                .take(2)
-                .joinToString("")
-
-            Text(
-                text = initials,
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    shadow = Shadow(
-                        color = Color.Black,
-                        offset = Offset(1f, 1f),
-                        blurRadius = 2f
-                    )
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
         // Información del coleccionista
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = collector.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = BaseWhite,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 2
             )
 
