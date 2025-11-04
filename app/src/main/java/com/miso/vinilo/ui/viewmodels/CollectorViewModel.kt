@@ -4,18 +4,18 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.CollectorDto
 import com.miso.vinilo.data.adapter.NetworkResult
-import com.miso.vinilo.data.repository.AlbumRepository
+import com.miso.vinilo.data.repository.CollectorRepository
 import com.miso.vinilo.data.adapter.NetworkConfig
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel that exposes album list state to the UI.
- * It now depends directly on [AlbumRepository].
+ * ViewModel that exposes collector list state to the UI.
+ * It now depends directly on [CollectorRepository].
  */
-class  AlbumViewModel(
-    private val repository: AlbumRepository
+class CollectorViewModel(
+    private val repository: CollectorRepository
 ) : ViewModel() {
 
     private val _state = MutableLiveData<UiState>(UiState.Idle)
@@ -24,13 +24,13 @@ class  AlbumViewModel(
     // Removed eager fetch from init: the UI should explicitly request data.
 
     /**
-     * Triggers a network load of albums and updates `state` accordingly.
+     * Triggers a network load of collectors and updates `state` accordingly.
      * This method must be called by the UI (or coordination layer) when data is required.
      */
-    fun loadAlbums() {
+    fun loadCollectors() {
         viewModelScope.launch {
             _state.value = UiState.Loading
-            when (val result = repository.getAlbums()) {
+            when (val result = repository.getCollectors()) {
                 is NetworkResult.Success -> _state.value = UiState.Success(result.data)
                 is NetworkResult.Error -> _state.value = UiState.Error(result.message)
             }
@@ -43,7 +43,7 @@ class  AlbumViewModel(
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
-        data class Success(val data: List<AlbumDto>) : UiState()
+        data class Success(val data: List<CollectorDto>) : UiState()
         data class Error(val message: String) : UiState()
     }
 
@@ -51,12 +51,12 @@ class  AlbumViewModel(
      * Convenience secondary constructor to quickly create a ViewModel wired to the network
      * implementation. Prefer passing a repository in production (DI) or tests.
      */
-    constructor(baseUrl: String) : this(AlbumRepository.create(baseUrl))
+    constructor(baseUrl: String) : this(CollectorRepository.create(baseUrl))
 
     /**
      * No-arg constructor so the default ViewModelProvider (or Compose's viewModel()) can
      * instantiate this ViewModel without a factory. It now delegates to the repository
      * created from the mutable NetworkConfig so tests can override the base URL at runtime.
      */
-    constructor() : this(AlbumRepository.create(NetworkConfig.baseUrl))
+    constructor() : this(CollectorRepository.create(NetworkConfig.baseUrl))
 }

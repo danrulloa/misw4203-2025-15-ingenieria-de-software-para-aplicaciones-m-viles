@@ -37,8 +37,10 @@ import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
+import com.miso.vinilo.ui.viewmodels.CollectorViewModel
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.CollectorDto
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +89,7 @@ fun ViniloApp() {
                 AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
                 AppDestinations.ALBUMES -> AlbumScreenHost(modifier = contentModifier)
                 AppDestinations.ARTISTAS -> MusicianScreenHost(modifier = contentModifier)
-                AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
+                AppDestinations.COLECCIONISTAS -> CollectorScreenHost(modifier = contentModifier)
             }
         }
     }
@@ -131,6 +133,26 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
 
     // Pass the current state to the screen composable.
     MusicianScreen(state = state, modifier = modifier)
+}
+
+@Composable
+fun CollectorScreenHost(modifier: Modifier = Modifier) {
+    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
+    // creates its own repository from BuildConfig, so a factory is no longer necessary.
+    val vm: CollectorViewModel = viewModel()
+
+    // Observe LiveData state so the UI recomposes on updates.
+    val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
+
+    // Trigger loading only when the composable enters composition and the VM is idle.
+    LaunchedEffect(Unit) {
+        if (state is CollectorViewModel.UiState.Idle) {
+            vm.loadCollectors()
+        }
+    }
+
+    // Pass the current state to the screen composable.
+    CollectorsScreen(state = state, modifier = modifier)
 }
 
 enum class AppDestinations(
