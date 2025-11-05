@@ -116,25 +116,27 @@ fun AlbumDetailContent(album: AlbumDto) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = album.performers.firstOrNull()?.name ?: "Artista desconocido",
+                    text = album.performers?.firstOrNull()?.name ?: "Artista desconocido",
                     style = MaterialTheme.typography.titleMedium, // Changed from titleLarge
                     color = BaseWhite.copy(alpha = 0.8f) // Added transparency
                 )
             }
         }
 
-        item {
-            Text(
-                text = "Canciones",
-                fontWeight = FontWeight.Bold,
-                fontSize = 22.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.headlineSmall
-            )
-        }
-
-        items(album.tracks) { track ->
-            TrackItem(track = track, coverUrl = album.cover)
+        // Use orEmpty to handle the case where tracks might be null
+        album.tracks?.let {
+            item {
+                Text(
+                    text = "Canciones",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
+            items(it) { track ->
+                TrackItem(track = track, coverUrl = album.cover)
+            }
         }
     }
 }

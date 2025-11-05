@@ -29,9 +29,10 @@ class NetworkServiceAdapterAlbumsIntegrationTest {
 
     @Test
     fun `retrofit parses album list from mock server`() = runTest {
+        // FIX: Added empty tracks and performers to match the DTO
         val json = """
             [
-              {"id":100,"name":"Buscando América","cover":"https://example.com/cover.jpg","releaseDate":"1984-08-01T00:00:00.000Z","description":"Album description","genre":"Salsa","recordLabel":"Elektra"}
+              {"id":100,"name":"Buscando América","cover":"https://example.com/cover.jpg","releaseDate":"1984-08-01T00:00:00.000Z","description":"Album description","genre":"Salsa","recordLabel":"Elektra","tracks":[],"performers":[]}
             ]
         """.trimIndent()
         server.enqueue(MockResponse().setResponseCode(200).setBody(json))
