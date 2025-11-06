@@ -1,5 +1,6 @@
 package com.miso.vinilo.ui.views.album
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -115,26 +116,27 @@ fun AlbumDetailContent(album: AlbumDto) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = album.performers?.firstOrNull()?.name ?: "Artista desconocido",
-                    style = MaterialTheme.typography.titleSmall, // Changed from titleLarge
-                    color = BaseWhite.copy(alpha = 0.8f) // Added transparency
+                    text = album.performers?.firstOrNull()?.name?.takeIf { it.isNotBlank() } ?: "Artista desconocido",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BaseWhite.copy(alpha = 0.8f)
                 )
             }
         }
 
-        // Use orEmpty to handle the case where tracks might be null
-        album.tracks?.let {
-            item {
-                Text(
-                    text = "Canciones",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            }
-            items(it) { track ->
-                TrackItem(track = track, coverUrl = album.cover)
+        album.tracks?.let { tracks ->
+            if (tracks.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Canciones",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+                items(tracks) { track ->
+                    TrackItem(track = track, coverUrl = album.cover)
+                }
             }
         }
     }
