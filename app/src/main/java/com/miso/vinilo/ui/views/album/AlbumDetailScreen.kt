@@ -117,7 +117,7 @@ fun AlbumDetailContent(album: AlbumDto) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = album.performers?.firstOrNull()?.name?.takeIf { it.isNotBlank() } ?: "Artista desconocido",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = BaseWhite.copy(alpha = 0.8f)
                 )
             }
