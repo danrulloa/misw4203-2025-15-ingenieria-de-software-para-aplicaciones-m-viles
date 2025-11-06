@@ -1,6 +1,5 @@
 package com.miso.vinilo.ui.views.album
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -117,7 +116,7 @@ fun AlbumDetailContent(album: AlbumDto) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = album.performers?.firstOrNull()?.name ?: "Artista desconocido",
-                    style = MaterialTheme.typography.titleMedium, // Changed from titleLarge
+                    style = MaterialTheme.typography.titleSmall, // Changed from titleLarge
                     color = BaseWhite.copy(alpha = 0.8f) // Added transparency
                 )
             }

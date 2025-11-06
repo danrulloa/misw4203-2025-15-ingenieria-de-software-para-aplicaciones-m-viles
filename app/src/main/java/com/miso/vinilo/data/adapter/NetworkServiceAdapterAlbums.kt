@@ -7,8 +7,17 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
+/**
+ * Network service adapter that uses a network API to retrieve album data.
+ * Other classes should call this implementation directly.
+ * @property api The [com.miso.vinilo.data.adapter.retrofit.AlbumApi] instance used to perform network requests.
+ */
 class NetworkServiceAdapterAlbums(private val api: AlbumApi) {
 
+    /**
+     * Fetches a list of albums from the network API.
+     * @return A [NetworkResult] containing a list of [AlbumDto] on success or an [Error].
+     */
     suspend fun getAlbums(): NetworkResult<List<AlbumDto>> {
         return try {
             val dtos: List<AlbumDto> = api.getAlbums()
@@ -18,6 +27,11 @@ class NetworkServiceAdapterAlbums(private val api: AlbumApi) {
         }
     }
 
+    /**
+     * Fetches a single album from the network API.
+     * @param id The ID of the album to fetch.
+     * @return A [NetworkResult] containing an [AlbumDto] on success or an [Error].
+     */
     suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
         return try {
             val dto: AlbumDto = api.getAlbum(id)
@@ -28,6 +42,11 @@ class NetworkServiceAdapterAlbums(private val api: AlbumApi) {
     }
 
     companion object {
+        /**
+         * Creates an instance of [NetworkServiceAdapterAlbums].
+         * @param baseUrl The base URL for network requests.
+         * @return A configured [com.miso.vinilo.data.adapter.NetworkServiceAdapterAlbums].
+         */
         fun create(baseUrl: String): NetworkServiceAdapterAlbums {
             val moshi = Moshi.Builder()
                 .add(KotlinJsonAdapterFactory())
