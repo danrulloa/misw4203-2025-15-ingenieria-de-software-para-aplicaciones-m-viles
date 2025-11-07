@@ -21,6 +21,9 @@ class AlbumViewModel(
     private val _state = MutableLiveData<UiState>(UiState.Idle)
     val state: LiveData<UiState> = _state
 
+    private val _albumDetailState = MutableLiveData<AlbumDetailUiState>(AlbumDetailUiState.Idle)
+    val albumDetailState: LiveData<AlbumDetailUiState> = _albumDetailState
+
     // Removed eager fetch from init: the UI should explicitly request data.
 
     /**
@@ -37,6 +40,16 @@ class AlbumViewModel(
         }
     }
 
+    fun loadAlbum(id: Long) {
+        viewModelScope.launch {
+            _albumDetailState.value = AlbumDetailUiState.Loading
+            when (val result = repository.getAlbum(id)) {
+                is NetworkResult.Success -> _albumDetailState.value = AlbumDetailUiState.Success(result.data)
+                is NetworkResult.Error -> _albumDetailState.value = AlbumDetailUiState.Error(result.message)
+            }
+        }
+    }
+
     /**
      * UI-friendly sealed class representing Idle/Loading/Success/Error states.
      */
@@ -45,6 +58,13 @@ class AlbumViewModel(
         object Loading : UiState()
         data class Success(val data: List<AlbumDto>) : UiState()
         data class Error(val message: String) : UiState()
+    }
+
+    sealed class AlbumDetailUiState {
+        object Idle : AlbumDetailUiState()
+        object Loading : AlbumDetailUiState()
+        data class Success(val data: AlbumDto) : AlbumDetailUiState()
+        data class Error(val message: String) : AlbumDetailUiState()
     }
 
     /**

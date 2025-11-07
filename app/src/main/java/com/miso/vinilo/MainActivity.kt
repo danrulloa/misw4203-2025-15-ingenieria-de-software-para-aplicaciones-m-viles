@@ -28,17 +28,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
-import com.miso.vinilo.ui.views.home.HomeScreen
+import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
-import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
-import com.miso.vinilo.ui.viewmodels.MusicianViewModel
+import com.miso.vinilo.ui.views.home.HomeScreen
+import com.miso.vinilo.ui.views.musicians.MusicianScreen
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
-import com.miso.vinilo.data.dto.MusicianDto
-import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.ui.viewmodels.MusicianViewModel
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +63,6 @@ fun ViniloApp() {
         containerColor = Color.Transparent,
         navigationSuiteItems = {
             AppDestinations.entries.forEach {
-
                 val isSelected = it == currentDestination
                 val tint = if (isSelected) PrincipalColor else BaseWhite
 
@@ -95,22 +96,32 @@ fun ViniloApp() {
 
 @Composable
 fun AlbumScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
     val vm: AlbumViewModel = viewModel()
+    var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(AlbumViewModel.UiState.Idle)
+    if (selectedAlbumId == null) {
+        val state by vm.state.observeAsState(AlbumViewModel.UiState.Idle)
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
-    LaunchedEffect(Unit) {
-        if (state is AlbumViewModel.UiState.Idle) {
-            vm.loadAlbums()
+        LaunchedEffect(Unit) {
+            if (state is AlbumViewModel.UiState.Idle) {
+                vm.loadAlbums()
+            }
         }
-    }
 
-    // Pass the current state to the screen composable.
-    AlbumsScreen(state = state, modifier = modifier)
+        AlbumsScreen(
+            state = state,
+            modifier = modifier,
+            onAlbumClick = { albumId ->
+                selectedAlbumId = albumId
+            }
+        )
+    } else {
+        AlbumDetailScreen(
+            albumId = selectedAlbumId!!,
+            viewModel = vm,
+            onBackClick = { selectedAlbumId = null }
+        )
+    }
 }
 
 @Composable
@@ -171,7 +182,9 @@ fun AlbumScreenPreview() {
                 releaseDate = "1984-08-01T00:00:00.000Z",
                 description = "Buscando América es el primer álbum de la banda de Rubén Blades y Seis del Solar lanzado en 1984. La producción, bajo el sello Elektra, fusiona diferentes ritmos musicales tales como la salsa, reggae, rock, y el jazz latino. El disco fue grabado en Eurosound Studios en Nueva York entre mayo y agosto de 1983.",
                 genre = "Salsa",
-                recordLabel = "Elektra"
+                recordLabel = "Elektra",
+                tracks = emptyList(),
+                performers = emptyList()
             ),
             AlbumDto(
                 id = 101,
@@ -180,7 +193,9 @@ fun AlbumScreenPreview() {
                 releaseDate = "1984-08-01T00:00:00.000Z",
                 description = "Poeta del pueblo es el primer álbum de estudio de Rubén Blades lanzado en 1984. La producción, bajo el sello Elektra, fusiona diferentes ritmos musicales tales como la salsa, reggae, rock, y el jazz latino.",
                 genre = "Salsa",
-                recordLabel = "Elektra"
+                recordLabel = "Elektra",
+                tracks = emptyList(),
+                performers = emptyList()
             ),
             AlbumDto(
                 id = 102,
@@ -189,12 +204,15 @@ fun AlbumScreenPreview() {
                 releaseDate = "1976-12-10T00:00:00.000Z",
                 description = "A Day at the Races es el quinto álbum de estudio de la banda de rock británica Queen. Fue lanzado el 10 de diciembre de 1976 por EMI Records en el Reino Unido y por Elektra Records en los Estados Unidos.",
                 genre = "Rock",
-                recordLabel = "EMI"
+                recordLabel = "EMI",
+                tracks = emptyList(),
+                performers = emptyList()
             )
         )
 
         AlbumsScreen(
-            state = AlbumViewModel.UiState.Success(sample)
+            state = AlbumViewModel.UiState.Success(sample),
+            onAlbumClick = {}
         )
     }
 }
