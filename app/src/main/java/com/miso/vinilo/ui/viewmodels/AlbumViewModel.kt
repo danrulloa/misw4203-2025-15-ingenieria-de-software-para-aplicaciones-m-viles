@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
  * ViewModel that exposes album list state to the UI.
  * It now depends directly on [AlbumRepository].
  */
-class  AlbumViewModel(
+class AlbumViewModel(
     private val repository: AlbumRepository
 ) : ViewModel() {
 
