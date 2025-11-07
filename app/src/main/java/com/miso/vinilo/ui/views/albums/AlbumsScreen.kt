@@ -3,6 +3,7 @@ package com.miso.vinilo.ui.views.albums
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -38,7 +39,8 @@ import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 @Composable
 fun AlbumsScreen(
     state: AlbumViewModel.UiState?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAlbumClick: (Long) -> Unit // Added this callback
 ) {
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
@@ -63,14 +65,14 @@ fun AlbumsScreen(
                 }
             }
             is AlbumViewModel.UiState.Success -> {
-                AlbumList(albums = s.data)
+                AlbumList(albums = s.data, onAlbumClick = onAlbumClick) // Pass the callback
             }
         }
     }
 }
 
 @Composable
-private fun AlbumList(albums: List<AlbumDto>) {
+private fun AlbumList(albums: List<AlbumDto>, onAlbumClick: (Long) -> Unit) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
@@ -78,23 +80,21 @@ private fun AlbumList(albums: List<AlbumDto>) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Use stable key to avoid unnecessary row recompositions/rebinds
         items(items = albums, key = { it.id }) { album ->
-            AlbumCard(album = album)
+            AlbumCard(album = album, onAlbumClick = onAlbumClick) // Pass the callback
         }
     }
 }
 
 @Composable
-private fun AlbumCard(album: AlbumDto) {
+private fun AlbumCard(album: AlbumDto, onAlbumClick: (Long) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
+            .clickable { onAlbumClick(album.id) } // Made the card clickable
     ) {
-        // Resolve image URL (handle relative paths) and show remote image if available; otherwise use placeholder
         val resolvedImage = resolveImageUrl(album.cover)
-        // Container for album cover with rounded corners - square aspect ratio
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -106,7 +106,6 @@ private fun AlbumCard(album: AlbumDto) {
             if (!resolvedImage.isNullOrBlank()) {
                 Log.d("AlbumCard", "Attempting to load image: $resolvedImage")
                 val ctx = LocalContext.current
-                // Build and remember the ImageRequest so it isn't recreated on every recomposition.
                 val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 val referer = try {
                     val u = java.net.URL(resolvedImage)
@@ -141,7 +140,6 @@ private fun AlbumCard(album: AlbumDto) {
                     contentScale = ContentScale.Crop
                 )
 
-                // Overlay placeholder text on top; hide (alpha 0) only when image successfully loaded
                 val initials = album.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
                 Box(
                     modifier = Modifier
@@ -165,7 +163,6 @@ private fun AlbumCard(album: AlbumDto) {
                     )
                 }
             } else {
-                // no image -> show initials
                 Log.d("AlbumCard", "No image, showing initials for ${album.name}")
                 val initials = album.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
                 Text(
@@ -186,7 +183,6 @@ private fun AlbumCard(album: AlbumDto) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Album information below the image
         Column {
             Text(
                 text = album.name,
@@ -219,18 +215,15 @@ private fun AlbumCard(album: AlbumDto) {
 internal fun resolveImageUrl(url: String?): String? {
     if (url.isNullOrBlank()) return null
     val trimmed = url.trim()
-    // Replace localhost addresses so emulator can reach host machine
     val replaced = trimmed
         .replace("localhost", "10.0.2.2", ignoreCase = true)
         .replace("127.0.0.1", "10.0.2.2")
     return if (replaced.startsWith("http://") || replaced.startsWith("https://")) {
         replaced
     } else if (trimmed.startsWith("/")) {
-        // prepend BASE_URL without double slash
         val base = BuildConfig.BASE_URL.trimEnd('/')
         "$base$trimmed"
     } else {
-        // treat as relative path
         val base = BuildConfig.BASE_URL.trimEnd('/')
         "$base/$trimmed"
     }
@@ -239,11 +232,9 @@ internal fun resolveImageUrl(url: String?): String? {
 internal fun extractYear(releaseDate: String?): String {
     if (releaseDate.isNullOrBlank()) return ""
     return try {
-        // Try to parse ISO date format and extract the year
         val odt = java.time.OffsetDateTime.parse(releaseDate)
         odt.year.toString()
     } catch (_: Exception) {
-        // Fallback: try to extract first 4 digits (year)
         val yearPattern = Regex("\\d{4}")
         yearPattern.find(releaseDate)?.value ?: releaseDate
     }

@@ -16,6 +16,10 @@ class AlbumRepository(
         return serviceAdapter.getAlbums()
     }
 
+    suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
+        return serviceAdapter.getAlbum(id)
+    }
+
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.

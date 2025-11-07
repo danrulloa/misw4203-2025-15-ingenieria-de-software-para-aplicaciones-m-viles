@@ -27,6 +27,20 @@ class NetworkServiceAdapterAlbums(private val api: AlbumApi) {
         }
     }
 
+    /**
+     * Fetches a single album from the network API.
+     * @param id The ID of the album to fetch.
+     * @return A [NetworkResult] containing an [AlbumDto] on success or an [Error].
+     */
+    suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
+        return try {
+            val dto: AlbumDto = api.getAlbum(id)
+            NetworkResult.Success(dto)
+        } catch (e: Exception) {
+            NetworkResult.Error("Unknown network error", e)
+        }
+    }
+
     companion object {
         /**
          * Creates an instance of [NetworkServiceAdapterAlbums].
