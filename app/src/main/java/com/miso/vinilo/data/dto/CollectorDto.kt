@@ -12,10 +12,3 @@ data class CollectorDto(
     val comments: List<CommentDto>? = null,
     val favoritePerformers: List<PerformerDto>? = null
 )
-
-@JsonClass(generateAdapter = true)
-data class CollectorAlbumDto(
-    val id: Long,
-    val price: Int,
-    val status: String
-)
