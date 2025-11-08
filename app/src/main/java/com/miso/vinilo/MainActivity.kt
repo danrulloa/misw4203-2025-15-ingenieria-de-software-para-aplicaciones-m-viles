@@ -41,8 +41,6 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
-import com.miso.vinilo.data.dto.MusicianDto
-import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.CollectorDto
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,7 +90,7 @@ fun ViniloApp() {
                 AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
                 AppDestinations.ALBUMES -> AlbumScreenHost(modifier = contentModifier)
                 AppDestinations.ARTISTAS -> MusicianScreenHost(modifier = contentModifier)
-                AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
+                AppDestinations.COLECCIONISTAS -> CollectorScreenHost(modifier = contentModifier)
             }
         }
     }

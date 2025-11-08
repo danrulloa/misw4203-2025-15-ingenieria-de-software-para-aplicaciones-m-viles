@@ -19,20 +19,3 @@ data class CollectorAlbumDto(
     val price: Int,
     val status: String
 )
-
-@JsonClass(generateAdapter = true)
-data class CommentDto(
-    val id: Long,
-    val description: String,
-    val rating: Int
-)
-
-@JsonClass(generateAdapter = true)
-data class PerformerDto(
-    val id: Long,
-    val name: String,
-    val image: String?,
-    val description: String?,
-    val birthDate: String? = null,
-    val creationDate: String? = null
-)
