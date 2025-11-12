@@ -3,24 +3,29 @@ package com.miso.vinilo.data.adapter
 import com.miso.vinilo.data.adapter.retrofit.MusicianApi
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NetworkServiceAdapterMusiciansUnitTest {
 
     private val api = mockk<MusicianApi>()
-    private lateinit var adapter: NetworkServiceAdapterMusicians
 
     @Before
     fun setUp() {
-        adapter = NetworkServiceAdapterMusicians(api)
+        // no-op: adapter will be created inside each runTest with a TestDispatcher
     }
 
     @Test
     fun `getMusicians returns error when api throws IOException`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val adapter = NetworkServiceAdapterMusicians(api, testDispatcher)
+
         coEvery { api.getMusicians() } throws IOException("network failure")
 
         val result = adapter.getMusicians()
