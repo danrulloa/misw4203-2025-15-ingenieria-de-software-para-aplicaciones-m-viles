@@ -11,8 +11,6 @@ sonarqube {
         property("sonar.projectKey", "misw4203-vinilos-mobile")
         property("sonar.host.url", "http://localhost:9000")
         property("sonar.login", "sqp_e9d9029ae920e45648d1c10ba02b80ed36b770c5")
-
-        // Evita escanear artefactos generados
         property("sonar.exclusions", "**/build/**,**/.gradle/**")
 
     }
