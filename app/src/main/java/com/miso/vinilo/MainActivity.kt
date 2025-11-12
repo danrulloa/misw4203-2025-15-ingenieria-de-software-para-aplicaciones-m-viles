@@ -41,7 +41,6 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
-import com.miso.vinilo.data.dto.CollectorDto
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -8,6 +8,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -32,6 +33,7 @@ class NetworkServiceAdapterAlbumsUnitTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        // This adapter is used for tests that do not inject a dispatcher
         adapter = NetworkServiceAdapterAlbums(api)
     }
 
@@ -55,27 +57,30 @@ class NetworkServiceAdapterAlbumsUnitTest {
     @Test
     fun `getAlbum returns success when api returns data`() = runTest {
         // Arrange
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val adapterWithDispatcher = NetworkServiceAdapterAlbums(api, testDispatcher)
         val albumId = 1L
-        val expectedDto = AlbumDto(albumId, "Test Album", "", "", "", "", "", emptyList(), emptyList())
+        val expectedDto = AlbumDto(albumId, "Test Album", "", "", "", "", "", null, null)
         coEvery { api.getAlbum(albumId) } returns expectedDto
 
         // Act
-        val result = adapter.getAlbum(albumId)
+        val result = adapterWithDispatcher.getAlbum(albumId)
 
         // Assert
         assertTrue(result is NetworkResult.Success)
-        val successResult = result as NetworkResult.Success
-        assertEquals(expectedDto, successResult.data)
+        assertEquals(expectedDto, (result as NetworkResult.Success).data)
     }
 
     @Test
     fun `getAlbum returns error when api throws IOException`() = runTest {
         // Arrange
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val adapterWithDispatcher = NetworkServiceAdapterAlbums(api, testDispatcher)
         val albumId = 1L
         coEvery { api.getAlbum(albumId) } throws IOException("network failure")
 
         // Act
-        val result = adapter.getAlbum(albumId)
+        val result = adapterWithDispatcher.getAlbum(albumId)
 
         // Assert
         assertTrue(result is NetworkResult.Error)
