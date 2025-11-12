@@ -3,12 +3,23 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("jacoco")
 }
 
 android {
     namespace = "com.miso.vinilo"
     compileSdk {
         version = release(36)
+    }
+
+    lint {
+        xmlReport = true
+        htmlReport = true
+        sarifReport = false
+        abortOnError = false
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     defaultConfig {
@@ -117,4 +128,24 @@ dependencies {
 
     // Google Play Services Base (contains ProviderInstaller)
     implementation("com.google.android.gms:play-services-base:18.2.0")
+}
+
+// Jacoco Configuration
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports { xml.required.set(true); html.required.set(true); csv.required.set(false) }
+
+    val fileFilter = listOf("**/R.class","**/R$*.class","**/BuildConfig.*","**/Manifest*.*","**/*Test*.*","android/**/*.*","**/*$*")
+    val ktDebug = fileTree("$buildDir/tmp/kotlin-classes/debug") { exclude(fileFilter) }
+    val javaDebug = fileTree("$buildDir/intermediates/javac/debug/classes") { exclude(fileFilter) }
+    classDirectories.setFrom(files(ktDebug, javaDebug))
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(fileTree(buildDir) {
+        include("jacoco/testDebugUnitTest.exec", "outputs/unit_test_code_coverage/**/testDebugUnitTest.exec")
+    })
 }
