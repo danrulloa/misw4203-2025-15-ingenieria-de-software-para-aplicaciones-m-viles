@@ -41,6 +41,8 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,22 +131,37 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
     val vm: MusicianViewModel = viewModel()
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+    var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
-    LaunchedEffect(Unit) {
-        if (state is MusicianViewModel.UiState.Idle) {
-            vm.loadMusicians()
+    if (selectedMusicianId == null) {
+        // ---- Lista ----
+        val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+
+        LaunchedEffect(Unit) {
+            if (state is MusicianViewModel.UiState.Idle) vm.loadMusicians()
         }
-    }
 
-    // Pass the current state to the screen composable.
-    MusicianScreen(state = state, modifier = modifier)
+        MusicianScreen(
+            state = state,
+            modifier = modifier,
+            onMusicianClick = { id -> selectedMusicianId = id }
+        )
+    } else {
+        // ---- Detalle ----
+        val detailState by vm.detailState.observeAsState(MusicianViewModel.DetailUiState.Idle)
+
+        LaunchedEffect(selectedMusicianId) {
+            vm.loadMusician(selectedMusicianId!!)
+        }
+
+        MusicianDetailScreen(
+            state = detailState,
+            onBackClick = { selectedMusicianId },
+            modifier = modifier
+        )
+    }
 }
 
 @Composable
@@ -262,7 +279,7 @@ fun MusicianScreenPreview() {
         )
 
         MusicianScreen(
-            state = MusicianViewModel.UiState.Success(sample)
+            state = MusicianViewModel.UiState.Success(sample),
         )
     }
 }

@@ -45,6 +45,24 @@ class NetworkServiceAdapterMusicians(
         }
     }
 
+    /**
+     * Fetches the detail of a musician from the network API.
+     * Executes the call on the injected IO dispatcher to avoid blocking the UI thread.
+     * @param id The identifier of the musician to fetch.
+     * @return A [NetworkResult] containing the [MusicianDto] on success or an [Error].
+     */
+    suspend fun getMusician(id: Long): NetworkResult<MusicianDto> {
+        return try {
+            val dto: MusicianDto = withContext(ioDispatcher) {
+                api.getMusician(id)
+            }
+            NetworkResult.Success(dto)
+        } catch (e: Exception) {
+            NetworkResult.Error("Unknown network error", e)
+        }
+    }
+
+
     companion object {
         /**
          * Creates an instance of [NetworkServiceAdapterMusicians].
