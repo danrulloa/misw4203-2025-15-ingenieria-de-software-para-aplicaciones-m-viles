@@ -1,6 +1,7 @@
 package com.miso.vinilo
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -138,27 +139,40 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
     if (selectedMusicianId == null) {
         // ---- Lista ----
         val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
-
+        Log.d("MusicianHost", "ENTRÉ A LA RAMA DE LISTA")
         LaunchedEffect(Unit) {
-            if (state is MusicianViewModel.UiState.Idle) vm.loadMusicians()
+            if (state is MusicianViewModel.UiState.Idle) {
+                Log.d("MusicianHost", "Cargando lista de músicos")
+                vm.loadMusicians()
+            }
         }
 
         MusicianScreen(
             state = state,
             modifier = modifier,
-            onMusicianClick = { id -> selectedMusicianId = id }
+            onMusicianClick = { id ->
+                Log.d("MusicianHost", "Click en músico con id=$id")
+                selectedMusicianId = id
+            }
         )
     } else {
         // ---- Detalle ----
         val detailState by vm.detailState.observeAsState(MusicianViewModel.DetailUiState.Idle)
 
         LaunchedEffect(selectedMusicianId) {
+            Log.d(
+                "MusicianHost",
+                "Cargando detalle de músico con id=$selectedMusicianId"
+            )
             vm.loadMusician(selectedMusicianId!!)
         }
 
         MusicianDetailScreen(
             state = detailState,
-            onBackClick = { selectedMusicianId },
+            onBackClick = {
+                Log.d("MusicianHost", "Volviendo a la lista de músicos")
+                selectedMusicianId = null
+            },
             modifier = modifier
         )
     }
@@ -280,6 +294,7 @@ fun MusicianScreenPreview() {
 
         MusicianScreen(
             state = MusicianViewModel.UiState.Success(sample),
+            onMusicianClick = {}
         )
     }
 }

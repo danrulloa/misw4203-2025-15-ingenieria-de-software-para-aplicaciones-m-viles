@@ -37,7 +37,7 @@ import coil.request.ImageRequest
 fun MusicianScreen(
     state: MusicianViewModel.UiState?,
     modifier: Modifier = Modifier,
-    onMusicianClick: (Long) -> Unit = {}
+    onMusicianClick: (Long) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -107,7 +107,10 @@ private fun MusicianRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable {
+                Log.d("MusicianRow", "CLICK row de id=${musician.id}")
+                onClick()
+            }
             .padding(vertical = 10.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically
