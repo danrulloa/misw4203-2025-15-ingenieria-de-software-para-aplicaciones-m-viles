@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.MusicianDto
@@ -76,7 +77,7 @@ fun ViniloApp() {
                         )
                     },
                     // Force the label to use the app typography so we know it's using Montserrat
-                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall, letterSpacing = (-0.9).sp) },
                     selected = it == currentDestination,
                     onClick = { currentDestination = it }
                 )
