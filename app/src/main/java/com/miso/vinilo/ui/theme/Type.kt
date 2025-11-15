@@ -11,7 +11,6 @@ import com.miso.vinilo.R
 // Use Montserrat font files placed in res/font
 val Montserrat = FontFamily(
     Font(R.font.montserrat_regular, FontWeight.Normal),
-    Font(R.font.montserrat_semibold, FontWeight.SemiBold),
     Font(R.font.montserrat_bold, FontWeight.Bold)
 )
 
@@ -26,13 +25,13 @@ val Typography = Typography(
     ),
     titleMedium = TextStyle(
         fontFamily = Montserrat,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
         lineHeight = 28.sp
     ),
     titleSmall = TextStyle(
         fontFamily = Montserrat,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
         lineHeight = 26.sp
     ),
@@ -40,7 +39,7 @@ val Typography = Typography(
     // Headline (16-24)
     headlineSmall = TextStyle(
         fontFamily = Montserrat,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         lineHeight = 24.sp
     ),
@@ -48,7 +47,7 @@ val Typography = Typography(
     // Body styles (14-20)
     bodyLarge = TextStyle(
         fontFamily = Montserrat,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 14.sp,
         lineHeight = 20.sp
     ),
@@ -62,7 +61,7 @@ val Typography = Typography(
     // Captions / labels (12-20)
     labelSmall = TextStyle(
         fontFamily = Montserrat,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
         lineHeight = 20.sp
     )

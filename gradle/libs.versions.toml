@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.0"
+agp = "8.13.1"
 kotlin = "2.1.0" # Bump Kotlin to match newer library metadata (Kotlin 2.2.x) used by test/runtime deps
 ksp = "2.1.0-1.0.29"
 coreKtx = "1.17.0"
