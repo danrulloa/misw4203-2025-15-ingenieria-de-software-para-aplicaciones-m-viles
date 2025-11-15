@@ -8,5 +8,6 @@ data class MusicianDto(
     val name: String,
     val image: String?,
     val description: String?,
-    val birthDate: String?
+    val birthDate: String?,
+    val albums: List<AlbumDto> = emptyList(),
 )

@@ -16,6 +16,10 @@ class MusicianRepository(
         return serviceAdapter.getMusicians()
     }
 
+    suspend fun getMusician(id: Long): NetworkResult<MusicianDto> {
+        return serviceAdapter.getMusician(id)
+    }
+
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.

@@ -1,6 +1,7 @@
 package com.miso.vinilo
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -42,6 +43,8 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,22 +133,59 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: MusicianViewModel = viewModel()
+    val musicianVm: MusicianViewModel = viewModel()
+    val albumVm: AlbumViewModel = viewModel()
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+    var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
-    LaunchedEffect(Unit) {
-        if (state is MusicianViewModel.UiState.Idle) {
-            vm.loadMusicians()
+    when {
+        selectedAlbumId != null -> {
+            // 💿 Detalle de álbum (reutilizamos tu pantalla existente)
+            AlbumDetailScreen(
+                albumId = selectedAlbumId!!,
+                viewModel = albumVm,
+                onBackClick = { selectedAlbumId = null }
+            )
+        }
+
+        selectedMusicianId == null -> {
+            // Lista de músicos
+            val state by musicianVm.state.observeAsState(MusicianViewModel.UiState.Idle)
+
+            LaunchedEffect(Unit) {
+                if (state is MusicianViewModel.UiState.Idle) {
+                    musicianVm.loadMusicians()
+                }
+            }
+
+            MusicianScreen(
+                state = state,
+                modifier = modifier,
+                onMusicianClick = { id ->
+                    selectedMusicianId = id
+                }
+            )
+        }
+
+        else -> {
+            val detailState by musicianVm.detailState
+                .observeAsState(MusicianViewModel.DetailUiState.Loading)
+
+            LaunchedEffect(selectedMusicianId) {
+                selectedMusicianId?.let { musicianVm.loadMusician(it) }
+            }
+
+            MusicianDetailScreen(
+                state = detailState,
+                onBackClick = { selectedMusicianId = null },
+                onAlbumClick = { albumId ->
+                    selectedAlbumId = albumId
+                },
+                modifier = modifier
+            )
         }
     }
-
-    // Pass the current state to the screen composable.
-    MusicianScreen(state = state, modifier = modifier)
 }
 
 @Composable
@@ -263,7 +303,8 @@ fun MusicianScreenPreview() {
         )
 
         MusicianScreen(
-            state = MusicianViewModel.UiState.Success(sample)
+            state = MusicianViewModel.UiState.Success(sample),
+            onMusicianClick = {}
         )
     }
 }

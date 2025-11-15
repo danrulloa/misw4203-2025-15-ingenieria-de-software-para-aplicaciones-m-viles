@@ -28,70 +28,86 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MusicianE2ETest {
 
-    companion object {
-        private lateinit var server: MockWebServer
-
-        @JvmStatic
-        @BeforeClass
-        fun setUpClass() {
-            server = MockWebServer()
-            server.start()
-            // Point app network to the mock server before the activity is launched
-            NetworkConfig.baseUrl = server.url("/").toString()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun tearDownClass() {
-            try {
-                server.shutdown()
-            } catch (_: Throwable) {
-                // ignore
-            }
-        }
-    }
-
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
+    private lateinit var server: MockWebServer
 
     @Before
     fun setupServer() {
-        // Enqueue response for musicians endpoint before each test
-        val json = """
-        [
-          {
-            "id": 1,
-            "name": "Juan Perez",
-            "image": "",
-            "birthDate": "1980-05-20T00:00:00.000Z",
-            "description": "Guitarrista",
-            "nationality": "Colombia"
-          },
-          {
-            "id": 2,
-            "name": "María López",
-            "image": "",
-            "birthDate": "1990-08-15T00:00:00.000Z",
-            "description": "Cantante",
-            "nationality": "Perú"
-          }
-        ]
+        // 1) Crear y arrancar un servidor nuevo para CADA test
+        server = MockWebServer()
+        server.start()
+
+        // 2) Apuntar SIEMPRE el baseUrl al server recien creado
+        NetworkConfig.baseUrl = server.url("/").toString()
+        Log.i("MusicianE2ETest", "BaseUrl para este test = ${NetworkConfig.baseUrl}")
+
+        // 3) Respuestas mockeadas
+        val musiciansJson = """
+            [
+              {
+                "id": 1,
+                "name": "Juan Perez",
+                "image": "",
+                "birthDate": "1980-05-20T00:00:00.000Z",
+                "description": "Guitarrista",
+                "performerPrizes": [],
+                "albums": []
+              },
+              {
+                "id": 2,
+                "name": "María López",
+                "image": "",
+                "birthDate": "1990-08-15T00:00:00.000Z",
+                "description": "Cantante",
+                "performerPrizes": [],
+                "albums": []
+              }
+            ]
         """.trimIndent()
 
-        server.enqueue(MockResponse().setResponseCode(200).setBody(json))
+        val musicianDetailJson = """
+            {
+              "id": 1,
+              "name": "Rubén Blades Bellido de Luna",
+              "image": "",
+              "birthDate": "1948-07-16T00:00:00.000Z",
+              "description": "Cantante y compositor",
+              "performerPrizes": [],
+              "albums": [
+                {
+                  "id": 100,
+                  "name": "Buscando América",
+                  "cover": "https://example.com/cover.jpg",
+                  "releaseDate": "1984-08-01T00:00:00.000Z",
+                  "description": "Álbum icónico de Rubén Blades",
+                  "genre": "Salsa",
+                  "recordLabel": "Elektra"
+                }
+              ]
+            }
+        """.trimIndent()
 
-        // No need to recreate activity because baseUrl was set in @BeforeClass
+        // IMPORTANTE: el orden en que los encolamos debe
+        // corresponder al orden en que la app hace las llamadas.
+        server.enqueue(MockResponse().setResponseCode(200).setBody(musiciansJson))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(musicianDetailJson))
     }
 
     @After
-    fun afterEach() {
-        // Drain any remaining requests so the next test starts clean
+    fun tearDown() {
         try {
+            // Limpiamos requests grabadas (no obligatorio pero ayuda a debug)
             while (true) {
-                server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
+                val req = server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
+                Log.i("MusicianE2ETest", "Request al apagar server: ${req.path}")
             }
         } catch (_: Throwable) {
-            // ignore
+        }
+
+        try {
+            server.shutdown()
+        } catch (_: Throwable) {
         }
     }
 
@@ -123,6 +139,30 @@ class MusicianE2ETest {
         composeTestRule.onNodeWithText("Juan Perez", substring = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("María López", substring = true).assertIsDisplayed()
         Log.i("MusicianE2ETest", "Test finished successfully")
+    }
+
+    @Test
+    fun e2e_openMusicianDetail() {
+        Log.i("MusicianE2ETest", "Test2: click nav item Artistas")
+        waitAndClickNavItem("Artistas")
+
+        Log.i("MusicianE2ETest", "Test2: waiting for title 'Artistas'")
+        waitForTextFlexible("Artistas", timeoutMs = 5_000L)
+
+        Log.i("MusicianE2ETest", "Test2: waiting for musician names")
+        waitForTextFlexible("Juan Perez", timeoutMs = 15_000L)
+
+        // Abrir el primer músico (ej: Juan Perez)
+        composeTestRule.onNodeWithText("Juan Perez", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        // Ahora deberíamos estar en el detalle del músico
+        waitForTextFlexible("Rubén Blades Bellido de Luna", timeoutMs = 15_000L)
+        composeTestRule.onNodeWithText("Rubén Blades Bellido de Luna", substring = true)
+            .assertIsDisplayed()
+
+        Log.i("MusicianE2ETest", "Test2: detalle del músico visible")
     }
 
     private fun waitForTextFlexible(text: String, timeoutMs: Long = 5_000L) {
