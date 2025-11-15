@@ -24,6 +24,8 @@ import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import androidx.test.platform.app.InstrumentationRegistry
+import com.miso.vinilo.data.database.ViniloDatabase
 
 @RunWith(AndroidJUnit4::class)
 class MusicianE2ETest {
@@ -56,6 +58,14 @@ class MusicianE2ETest {
 
     @Before
     fun setupServer() {
+        // Start from a clean local cache so the screen triggers a network refresh
+        try {
+            val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+            ViniloDatabase.getDatabase(ctx).clearAllTables()
+        } catch (_: Throwable) {
+            // ignore cleanup issues to avoid making the test flaky on first run
+        }
+
         // Enqueue response for musicians endpoint before each test
         val json = """
         [
@@ -110,8 +120,8 @@ class MusicianE2ETest {
             val recorded = server.takeRequest(500, TimeUnit.MILLISECONDS)
             if (recorded != null) Log.i("MusicianE2ETest", "Recorded request: path=${'$'}{recorded.path}")
             else Log.w("MusicianE2ETest", "No request observed in short interval")
-        } catch (e: Throwable) {
-            Log.w("MusicianE2ETest", "Error while taking request: ${'$'}{e.message}")
+        } catch (_: Throwable) {
+            Log.w("MusicianE2ETest", "Error while taking request")
         }
 
         // Wait for musician names loaded from network
@@ -188,7 +198,6 @@ class MusicianE2ETest {
     private fun waitAndClickNavItem(label: String, timeoutMs: Long = 5_000L) {
         val candidates = listOf(label, label.replace("A", "Á"), label.replace("Á", "A"), "Artista", "Artistas", "Artistas")
         val deadline = System.currentTimeMillis() + timeoutMs
-        var lastException: Throwable? = null
         while (System.currentTimeMillis() < deadline) {
             for (candidate in candidates) {
                 try {
@@ -204,21 +213,21 @@ class MusicianE2ETest {
                         composeTestRule.onRoot().performTouchInput { click(Offset(center.x, center.y)) }
                         return
                     }
-                } catch (e: Throwable) {
-                    lastException = e
+                } catch (_: Throwable) {
+                    // ignore and try next strategy
                 }
 
                 try {
                     val node = composeTestRule.onNodeWithContentDescription(candidate, useUnmergedTree = true)
                     node.performClick()
                     return
-                } catch (e: Throwable) {
-                    lastException = e
+                } catch (_: Throwable) {
+                    // ignore and try next candidate
                 }
             }
 
             Thread.sleep(200)
         }
-        throw AssertionError("Could not find or click nav item '${'$'}label' (last: ${'$'}{lastException?.message})")
+        throw AssertionError("Could not find or click nav item '${'$'}label'")
     }
 }

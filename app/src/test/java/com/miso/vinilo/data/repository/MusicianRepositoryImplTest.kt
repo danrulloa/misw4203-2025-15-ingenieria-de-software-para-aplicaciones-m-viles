@@ -1,43 +1,98 @@
 package com.miso.vinilo.data.repository
 
+import androidx.paging.PagingSource
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
+import com.miso.vinilo.data.database.dao.MusicianDao
+import com.miso.vinilo.data.database.entities.MusicianEntity
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class MusicianRepositoryImplTest {
 
     @Test
-    fun `getMusicians returns success when adapter returns success`() = runTest {
+    fun `getPagedMusicians returns flow from dao`() = runTest {
         val adapter = mockk<NetworkServiceAdapterMusicians>()
-        val expected = listOf(
-            MusicianDto(1, "Adele Laurie Blue Adkins", "", "Singer", "1988-05-05T00:00:00.000Z")
-        )
-        coEvery { adapter.getMusicians() } returns NetworkResult.Success(expected)
+        val dao = mockk<MusicianDao>()
+        val pagingSource = mockk<PagingSource<Int, MusicianEntity>>()
+        every { dao.getPagedMusicians() } returns pagingSource
 
-        val repo = MusicianRepository(adapter)
-        val result = repo.getMusicians()
+        val repo = MusicianRepository(adapter, dao)
+        val flow = repo.getPagedMusicians()
 
-        assertTrue(result is NetworkResult.Success)
-        val data = (result as NetworkResult.Success).data
-        assertEquals(expected, data)
+        // Ensure flow object is created
+        assertNotNull(flow)
     }
 
     @Test
-    fun `getMusicians returns error when adapter returns error`() = runTest {
+    fun `forceRefresh fetches from network and stores in dao`() = runTest {
         val adapter = mockk<NetworkServiceAdapterMusicians>()
-        coEvery { adapter.getMusicians() } returns NetworkResult.Error("network failure")
+        val dao = mockk<MusicianDao>(relaxed = true)
+        val musicians = listOf(
+            MusicianDto(1, "Adele", "", "Singer", "1988-05-05T00:00:00.000Z")
+        )
+        coEvery { adapter.getMusicians() } returns NetworkResult.Success(musicians)
+        coEvery { dao.deleteAll() } returns Unit
+        coEvery { dao.insertAll(any()) } returns Unit
 
-        val repo = MusicianRepository(adapter)
-        val result = repo.getMusicians()
+        val repo = MusicianRepository(adapter, dao)
+        repo.forceRefresh()
 
-        assertTrue(result is NetworkResult.Error)
-        val message = (result as NetworkResult.Error).message
-        assertEquals("network failure", message)
+        coVerify { dao.deleteAll() }
+        coVerify { dao.insertAll(any()) }
+    }
+
+    @Test
+    fun `refreshIfNeeded does not refresh if data is fresh`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val dao = mockk<MusicianDao>(relaxed = true)
+        val recentTimestamp = System.currentTimeMillis() - 60000L // 1 minute ago
+        coEvery { dao.getLastUpdateTime() } returns recentTimestamp
+
+        val repo = MusicianRepository(adapter, dao)
+        repo.refreshIfNeeded()
+
+        // Should not call network since data is fresh (< 30 min)
+        coVerify(exactly = 0) { adapter.getMusicians() }
+    }
+
+    @Test
+    fun `refreshIfNeeded refreshes if data is stale`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val dao = mockk<MusicianDao>(relaxed = true)
+        val staleTimestamp = System.currentTimeMillis() - 3600000L // 1 hour ago
+        coEvery { dao.getLastUpdateTime() } returns staleTimestamp
+        coEvery { adapter.getMusicians() } returns NetworkResult.Success(emptyList())
+        coEvery { dao.deleteAll() } returns Unit
+        coEvery { dao.insertAll(any()) } returns Unit
+
+        val repo = MusicianRepository(adapter, dao)
+        repo.refreshIfNeeded()
+
+        // Should call network since data is stale (> 30 min)
+        coVerify { adapter.getMusicians() }
+        coVerify { dao.deleteAll() }
+    }
+
+    @Test
+    fun `refreshIfNeeded refreshes if no data exists`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val dao = mockk<MusicianDao>(relaxed = true)
+        coEvery { dao.getLastUpdateTime() } returns null // No data
+        coEvery { adapter.getMusicians() } returns NetworkResult.Success(emptyList())
+        coEvery { dao.deleteAll() } returns Unit
+        coEvery { dao.insertAll(any()) } returns Unit
+
+        val repo = MusicianRepository(adapter, dao)
+        repo.refreshIfNeeded()
+
+        // Should call network since no data exists
+        coVerify { adapter.getMusicians() }
     }
 }

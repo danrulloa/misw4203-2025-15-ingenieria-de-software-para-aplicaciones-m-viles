@@ -95,6 +95,16 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.kotlin.codegen)
 
+    // Room for local database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
+    ksp(libs.androidx.room.compiler)
+
+    // Paging3 for pagination
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
+
     // Coil for image loading in Compose
     implementation("io.coil-kt:coil-compose:2.7.0")
 
@@ -116,6 +126,11 @@ dependencies {
     // Koin test helpers
     testImplementation("io.insert-koin:koin-test:4.1.1")
     testImplementation("io.insert-koin:koin-test-junit4:4.1.1")
+    // Room testing
+    androidTestImplementation(libs.androidx.room.runtime)
+    androidTestImplementation(libs.androidx.room.ktx)
+    // Paging testing
+    testImplementation("androidx.paging:paging-common-ktx:3.3.0")
     // Junit and Espresso config
     testImplementation("junit:junit:4.12")
     androidTestImplementation("com.android.support.test:runner:1.0.1")
