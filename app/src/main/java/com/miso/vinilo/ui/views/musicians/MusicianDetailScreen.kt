@@ -1,5 +1,7 @@
 package com.miso.vinilo.ui.views.musicians
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,15 +12,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 
@@ -98,10 +105,22 @@ fun MusicianDetailScreen(
                     item {
                         BoxWithConstraints {
                             val screenWidth = maxWidth
+                            val context = LocalContext.current
 
-                            AsyncImage(
-                                model = musician.image,
-                                contentDescription = musician.name,
+                            // Opcional: reutilizar tu helper si lo tienes
+                            val resolvedImage = resolveImageUrl(musician.image)
+
+                            val request = remember(resolvedImage) {
+                                ImageRequest.Builder(context)
+                                    .data(resolvedImage)
+                                    .crossfade(true)
+                                    .build()
+                            }
+
+                            val painter = rememberAsyncImagePainter(request)
+                            val painterState = painter.state
+
+                            Box(
                                 modifier = Modifier
                                     .width(screenWidth)
                                     .height(260.dp)
@@ -110,11 +129,25 @@ fun MusicianDetailScreen(
                                             bottomStart = 24.dp,
                                             bottomEnd = 24.dp
                                         )
-                                    ),
-                                contentScale = ContentScale.Crop
-                            )
+                                    )
+                                    // 👇 fondo gris por defecto, siempre
+                                    .background(Color(0xFF444444)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (painterState is AsyncImagePainter.State.Success) {
+                                    // Solo si Coil logró descargar la imagen
+                                    Image(
+                                        painter = painter,
+                                        contentDescription = musician.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                // else -> no pintamos nada más: se ve solo el fondo gris
+                            }
                         }
                     }
+
 
 
                     // Nombre
