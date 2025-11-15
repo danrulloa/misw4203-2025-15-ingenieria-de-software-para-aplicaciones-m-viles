@@ -23,11 +23,14 @@ class NetworkServiceAdapterAlbums(
 
     /**
      * Fetches a list of albums from the network API.
+     * Executes the call on the injected IO dispatcher to avoid blocking the UI thread.
      * @return A [NetworkResult] containing a list of [AlbumDto] on success or an [Error].
      */
     suspend fun getAlbums(): NetworkResult<List<AlbumDto>> {
         return try {
-            val dtos: List<AlbumDto> = api.getAlbums()
+            val dtos: List<AlbumDto> = withContext(ioDispatcher) {
+                api.getAlbums()
+            }
             NetworkResult.Success(dtos)
         } catch (e: Exception) {
             NetworkResult.Error("Unknown network error", e)
