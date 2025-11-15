@@ -32,8 +32,10 @@ class MusicianViewModel(
         viewModelScope.launch {
             _state.value = UiState.Loading
             when (val result = repository.getMusicians()) {
-                is NetworkResult.Success -> _state.value = UiState.Success(result.data)
-                is NetworkResult.Error -> _state.value = UiState.Error(result.message)
+                is NetworkResult.Success ->
+                    _state.value = UiState.Success(result.data)
+                is NetworkResult.Error ->
+                    _state.value = UiState.Error(result.message)
             }
         }
     }
@@ -47,17 +49,27 @@ class MusicianViewModel(
             when (val result = repository.getMusician(id)) {
                 is NetworkResult.Success -> {
                     val musician = result.data
-                    val albumsUi = musician.albums.toAlbumUi()
+                    val albumsUi = musician.albums.map {
+                        AlbumUi(
+                            id = it.id,
+                            name = it.name,
+                            cover = it.cover,
+                            year = it.releaseDate?.take(4) ?: "—"
+                        )
+                    }
                     _detailState.value = DetailUiState.Success(
-                        DetailUiData(musician = musician, albums = albumsUi)
+                        DetailUiData(
+                            musician = musician,
+                            albums = albumsUi
+                        )
                     )
                 }
-                is NetworkResult.Error -> {
+                is NetworkResult.Error ->
                     _detailState.value = DetailUiState.Error(result.message)
-                }
             }
         }
     }
+
 
 
     /**
