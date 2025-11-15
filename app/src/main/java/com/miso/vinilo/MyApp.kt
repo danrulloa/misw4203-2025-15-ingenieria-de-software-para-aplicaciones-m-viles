@@ -12,10 +12,8 @@ class MyApp : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@MyApp)
-            // lightweight logger for development
             logger(PrintLogger(Level.INFO))
             modules(appModule)
         }
     }
 }
-
