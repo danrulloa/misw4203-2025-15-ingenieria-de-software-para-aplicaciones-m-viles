@@ -17,7 +17,7 @@ class MusicianRepository(
     }
 
     suspend fun getMusician(id: Long): NetworkResult<MusicianDto> {
-        return  serviceAdapter.getMusician(id)
+        return serviceAdapter.getMusician(id)
     }
 
     companion object {
