@@ -11,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import android.util.Log
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -42,7 +43,8 @@ import coil.request.ImageRequest
 @Composable
 fun MusicianScreen(
     viewModel: MusicianViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMusicianClick: (Long) -> Unit = {}
 ) {
     val musicians = viewModel.musicians.collectAsLazyPagingItems()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -63,21 +65,25 @@ fun MusicianScreen(
             onRefresh = { viewModel.refreshMusicians() },
             modifier = Modifier.fillMaxSize()
         ) {
-            MusicianList(musicians = musicians)
+            MusicianPagedList(musicians = musicians, onMusicianClick = onMusicianClick)
         }
     }
 }
 
 /**
- * Stateless composable that displays a list of musicians.
- * This version accepts a simple List for easier testing and previews.
+ * Stateless composable that displays a list of musicians from a regular list (for previews/tests).
  */
 @Composable
 fun MusicianListContent(
     musicians: List<MusicianDto>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMusicianClick: (Long) -> Unit = {}
 ) {
-    Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
         Text(
             text = "Artistas",
             style = MaterialTheme.typography.titleLarge,
@@ -96,16 +102,20 @@ fun MusicianListContent(
                 items = musicians,
                 key = { musician -> musician.id }
             ) { musician ->
-                MusicianRow(musician = musician)
+                MusicianRow(musician = musician, onClick = { onMusicianClick(musician.id) })
             }
         }
     }
 }
 
 @Composable
-private fun MusicianList(musicians: LazyPagingItems<MusicianDto>) {
+private fun MusicianPagedList(
+    musicians: LazyPagingItems<MusicianDto>,
+    onMusicianClick: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         items(
@@ -113,24 +123,31 @@ private fun MusicianList(musicians: LazyPagingItems<MusicianDto>) {
             key = { index -> musicians[index]?.id ?: index }
         ) { index ->
             musicians[index]?.let { musician ->
-                MusicianRow(musician = musician)
+                MusicianRow(musician = musician, onClick = { onMusicianClick(musician.id) })
             }
         }
     }
 }
 
 @Composable
-private fun MusicianRow(musician: MusicianDto) {
+private fun MusicianRow(
+    musician: MusicianDto,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable {
+                Log.d("MusicianRow", "CLICK row de id=${musician.id}")
+                onClick()
+            }
             .padding(vertical = 10.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Resolve image URL (handle relative paths) and show remote image if available; otherwise use initials fallback
         val resolvedImage = resolveImageUrl(musician.image)
-        // container always draws a circular gray background
+
         Box(
             modifier = Modifier
                 .size(64.dp)
@@ -141,11 +158,12 @@ private fun MusicianRow(musician: MusicianDto) {
             if (!resolvedImage.isNullOrBlank()) {
                 Log.d("MusicianRow", "Attempting to load image: $resolvedImage")
                 val ctx = LocalContext.current
-                // Build and remember the ImageRequest so it isn't recreated on every recomposition.
-                val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+                val userAgent =
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 val referer = try {
-                    val u = java.net.URL(resolvedImage)
-                    "${u.protocol}://${u.host}/"
+                    val url = java.net.URL(resolvedImage)
+                    "${'$'}{url.protocol}://${'$'}{url.host}/"
                 } catch (_: Exception) {
                     "https://commons.wikimedia.org/"
                 }
@@ -157,12 +175,17 @@ private fun MusicianRow(musician: MusicianDto) {
                         .addHeader("User-Agent", userAgent)
                         .addHeader("Referer", referer)
                         .listener(
-                            onSuccess = { _, result ->
-                                // result.drawable is non-null here per Coil callback signature
-                                Log.d("MusicianRow", "Coil success: $resolvedImage, size=${result.drawable.intrinsicWidth}x${result.drawable.intrinsicHeight}")
+                            onSuccess = { _, _ ->
+                                Log.d(
+                                    "MusicianRow",
+                                    "Coil success: $resolvedImage"
+                                )
                             },
-                            onError = { _, result ->
-                                Log.e("MusicianRow", "Coil failed to load image: $resolvedImage", result.throwable)
+                            onError = { _, _ ->
+                                Log.e(
+                                    "MusicianRow",
+                                    "Coil failed to load image: $resolvedImage"
+                                )
                             }
                         )
                         .build()
@@ -178,13 +201,19 @@ private fun MusicianRow(musician: MusicianDto) {
                 )
 
                 // Overlay initials on top; hide (alpha 0) only when image successfully loaded
-                val initials = musician.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
+                val initials = musician.name
+                    .split(" ")
+                    .mapNotNull { it.firstOrNull()?.toString() }
+                    .take(2)
+                    .joinToString("")
+
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .wrapContentSize(Alignment.Center)
                 ) {
-                    val showAlpha = if (painter.state is AsyncImagePainter.State.Success) 0f else 1f
+                    val showAlpha =
+                        if (painter.state is AsyncImagePainter.State.Success) 0f else 1f
                     Text(
                         text = initials,
                         color = Color.White,
@@ -202,8 +231,12 @@ private fun MusicianRow(musician: MusicianDto) {
                 }
             } else {
                 // no image -> show initials
-                Log.d("MusicianRow", "No image, showing initials for ${musician.name}")
-                val initials = musician.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
+                Log.d("MusicianRow", "No image, showing initials for ${'$'}{musician.name}")
+                val initials = musician.name
+                    .split(" ")
+                    .mapNotNull { it.firstOrNull()?.toString() }
+                    .take(2)
+                    .joinToString("")
                 Text(
                     text = initials,
                     color = Color.White,
@@ -242,9 +275,14 @@ private fun MusicianRow(musician: MusicianDto) {
         Spacer(modifier = Modifier.width(8.dp))
 
         // Trailing chevron using a simple character to avoid icon package dependency
-        Text(text = "›", color = BaseWhite, style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "›",
+            color = BaseWhite,
+            style = MaterialTheme.typography.titleLarge
+        )
     }
 }
+
 
 internal fun resolveImageUrl(url: String?): String? {
     if (url.isNullOrBlank()) return null

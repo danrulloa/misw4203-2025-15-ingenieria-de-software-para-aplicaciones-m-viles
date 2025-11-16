@@ -80,6 +80,7 @@ dependencies {
     // Compose LiveData interop (provides observeAsState for LiveData)
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -131,6 +132,9 @@ dependencies {
     androidTestImplementation(libs.androidx.room.ktx)
     // Paging testing
     testImplementation("androidx.paging:paging-common-ktx:3.3.0")
+    // Si usan Mockito-Kotlin
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
+    testImplementation("org.mockito:mockito-core:5.+")
     // Junit and Espresso config
     testImplementation("junit:junit:4.12")
     androidTestImplementation("com.android.support.test:runner:1.0.1")

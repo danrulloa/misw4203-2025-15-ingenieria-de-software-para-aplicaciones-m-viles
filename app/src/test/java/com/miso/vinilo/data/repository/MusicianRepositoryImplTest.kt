@@ -10,15 +10,19 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MusicianRepositoryImplTest {
 
     @Test
     fun `getPagedMusicians returns flow from dao`() = runTest {
-        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val adapter = mockk<NetworkServiceAdapterMusicians>(relaxed = true)
         val dao = mockk<MusicianDao>()
         val pagingSource = mockk<PagingSource<Int, MusicianEntity>>()
         every { dao.getPagedMusicians() } returns pagingSource
@@ -50,7 +54,7 @@ class MusicianRepositoryImplTest {
 
     @Test
     fun `refreshIfNeeded does not refresh if data is fresh`() = runTest {
-        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val adapter = mockk<NetworkServiceAdapterMusicians>(relaxed = true)
         val dao = mockk<MusicianDao>(relaxed = true)
         val recentTimestamp = System.currentTimeMillis() - 60000L // 1 minute ago
         coEvery { dao.getLastUpdateTime() } returns recentTimestamp
@@ -94,5 +98,30 @@ class MusicianRepositoryImplTest {
 
         // Should call network since no data exists
         coVerify { adapter.getMusicians() }
+    }
+
+    @Test
+    fun `getMusician delegates call to serviceAdapter and returns NetworkResult`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val dao = mockk<MusicianDao>(relaxed = true)
+
+        val dto = MusicianDto(
+            id = 100L,
+            name = "Rubén Blades Bellido de Luna",
+            image = "url",
+            description = "desc",
+            birthDate = "1948-07-16T00:00:00.000Z",
+            albums = emptyList(),
+        )
+
+        coEvery { adapter.getMusician(100L) } returns NetworkResult.Success(dto)
+
+        val repository = MusicianRepository(adapter, dao)
+        val result = repository.getMusician(100L)
+
+        coVerify { adapter.getMusician(100L) }
+        assertTrue(result is NetworkResult.Success)
+        val data = (result as NetworkResult.Success).data
+        assertEquals("Rubén Blades Bellido de Luna", data.name)
     }
 }

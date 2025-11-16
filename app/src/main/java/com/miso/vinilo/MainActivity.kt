@@ -38,10 +38,13 @@ import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
+import com.miso.vinilo.ui.views.musicians.MusicianListContent
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,11 +133,52 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Get ViewModel from Koin DI
-    val vm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
+    // Get ViewModel from Koin DI for musicians, keep AlbumViewModel from the default factory
+    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
+    val albumVm: AlbumViewModel = viewModel()
 
-    // Pass the ViewModel directly to the screen composable
-    MusicianScreen(viewModel = vm, modifier = modifier)
+    var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    when {
+        selectedAlbumId != null -> {
+            // 💿 Detalle de álbum (reutilizamos tu pantalla existente)
+            AlbumDetailScreen(
+                albumId = selectedAlbumId!!,
+                viewModel = albumVm,
+                onBackClick = { selectedAlbumId = null }
+            )
+        }
+
+        selectedMusicianId == null -> {
+            // Lista de músicos
+            // Pasamos el ViewModel directo al composable; este consume Flow<PagingData> y
+            // controla su propio refresco (pull-to-refresh) a través de viewModel.refreshMusicians().
+            MusicianScreen(
+                viewModel = musicianVm,
+                modifier = modifier,
+                onMusicianClick = { id -> selectedMusicianId = id }
+            )
+        }
+
+        else -> {
+            val detailState by musicianVm.detailState
+                .observeAsState(MusicianViewModel.DetailUiState.Loading)
+
+            LaunchedEffect(selectedMusicianId) {
+                selectedMusicianId?.let { musicianVm.loadMusician(it) }
+            }
+
+            MusicianDetailScreen(
+                state = detailState,
+                onBackClick = { selectedMusicianId = null },
+                onAlbumClick = { albumId ->
+                    selectedAlbumId = albumId
+                },
+                modifier = modifier
+            )
+        }
+    }
 }
 
 @Composable
@@ -258,8 +302,10 @@ fun MusicianScreenPreview() {
             )
         )
 
-        com.miso.vinilo.ui.views.musicians.MusicianListContent(
-            musicians = sample
+        // Use list-based preview composable (no ViewModel required)
+        MusicianListContent(
+            musicians = sample,
+            onMusicianClick = {}
         )
     }
 }

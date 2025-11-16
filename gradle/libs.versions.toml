@@ -15,6 +15,7 @@ compose-runtime = "1.7.6"
 # Added versions for networking
 retrofit = "2.9.0"
 moshi = "1.15.2"
+foundation = "1.9.4"
 
 # Room and Paging
 room = "2.6.1"
@@ -46,6 +47,7 @@ converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", 
 moshi = { group = "com.squareup.moshi", name = "moshi", version.ref = "moshi" }
 moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }
 moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", version.ref = "moshi" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 # Room libs
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

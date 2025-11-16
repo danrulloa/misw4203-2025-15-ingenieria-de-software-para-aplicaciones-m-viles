@@ -1,17 +1,22 @@
 package com.miso.vinilo.ui.viewmodels
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.paging.PagingData
+import com.miso.vinilo.Utils.MainDispatcherRule
+import com.miso.vinilo.Utils.getOrAwaitValue
 import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.data.adapter.NetworkResult
+import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.repository.MusicianRepository
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.coJustRun
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -19,7 +24,9 @@ import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -27,14 +34,21 @@ class MusicianViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    @get:Rule
+    val instantExecutorRule = InstantTaskExecutorRule()
+
     @Before
     fun setUp() {
-        Dispatchers.setMain(testDispatcher)
+        // ensure the test dispatcher is set as Main
+        kotlinx.coroutines.Dispatchers.setMain(testDispatcher)
     }
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
+        kotlinx.coroutines.Dispatchers.resetMain()
     }
 
     @Test
@@ -94,7 +108,6 @@ class MusicianViewModelTest {
         coVerify { repo.forceRefresh() }
     }
 
-    @Suppress("UNUSED_EXPRESSION")
     @Test
     fun `musicians flow is provided by repository`() = runTest {
         val repo = mockk<MusicianRepository>(relaxed = true)
@@ -109,5 +122,58 @@ class MusicianViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { repo.getPagedMusicians() }
+    }
+
+    @Test
+    fun `loadMusician success updates detailState with mapped albums`() = runTest {
+        // Arrange
+        val repo = mockk<MusicianRepository>()
+        // Asegurar flujo vacío para el pager y evitar llamadas reales
+        coEvery { repo.getPagedMusicians() } returns flowOf(PagingData.empty())
+        // Evitar fallo por refresh en init
+        coJustRun { repo.refreshIfNeeded() }
+
+        val albums = listOf(
+            AlbumDto(
+                id = 100,
+                name = "Buscando América",
+                cover = "https://example.com/cover.jpg",
+                releaseDate = "1984-08-01T00:00:00.000Z",
+                description = "desc",
+                genre = "Salsa",
+                recordLabel = "Elektra",
+                tracks = emptyList(),
+                performers = emptyList()
+            )
+        )
+
+        val dto = MusicianDto(
+            id = 100L,
+            name = "Rubén Blades Bellido de Luna",
+            image = "https://example.com/ruben.jpg",
+            description = "Cantante",
+            birthDate = "1948-07-16T00:00:00.000Z",
+            albums = albums,
+        )
+
+        coEvery { repo.getMusician(100L) } returns NetworkResult.Success(dto)
+
+        val vm = MusicianViewModel(repo)
+
+        // Act
+        vm.loadMusician(100L)
+
+        // permite que corran las corrutinas del viewModelScope
+        advanceUntilIdle()
+
+        // Assert
+        val state = vm.detailState.getOrAwaitValue()
+        assertTrue(state is MusicianViewModel.DetailUiState.Success)
+
+        val data = (state as MusicianViewModel.DetailUiState.Success).data
+        assertEquals("Rubén Blades Bellido de Luna", data.musician.name)
+        assertEquals(1, data.albums.size)
+        assertEquals("Buscando América", data.albums[0].name)
+        assertEquals("1984", data.albums[0].year)
     }
 }

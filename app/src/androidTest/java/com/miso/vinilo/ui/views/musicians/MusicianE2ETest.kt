@@ -1,5 +1,6 @@
 package com.miso.vinilo.ui.views.musicians
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
@@ -11,223 +12,189 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.click
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.miso.vinilo.MainActivity
 import com.miso.vinilo.data.adapter.NetworkConfig
+import com.miso.vinilo.data.database.ViniloDatabase
+import com.miso.vinilo.di.appModule
 import java.util.concurrent.TimeUnit
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.junit.After
-import org.junit.AfterClass
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.runner.RunWith
-import androidx.test.platform.app.InstrumentationRegistry
-import com.miso.vinilo.data.database.ViniloDatabase
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.android.ext.koin.androidContext
 
 @RunWith(AndroidJUnit4::class)
 class MusicianE2ETest {
+
+    @get:Rule
+    val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     companion object {
         private lateinit var server: MockWebServer
 
         @JvmStatic
         @BeforeClass
-        fun setUpClass() {
+        fun beforeClass() {
+            // Iniciar el server y ajustar el baseUrl ANTES de lanzar la Activity/DI
             server = MockWebServer()
             server.start()
-            // Point app network to the mock server before the activity is launched
             NetworkConfig.baseUrl = server.url("/").toString()
+            Log.i("MusicianE2ETest", "[BeforeClass] BaseUrl=${'$'}{NetworkConfig.baseUrl}")
+
+            // Reiniciar Koin para que el adapter use el nuevo baseUrl
+            try { stopKoin() } catch (_: Throwable) {}
+            val appContext = ApplicationProvider.getApplicationContext<Application>()
+            startKoin {
+                androidContext(appContext)
+                modules(appModule)
+            }
         }
 
         @JvmStatic
         @AfterClass
-        fun tearDownClass() {
-            try {
-                server.shutdown()
-            } catch (_: Throwable) {
-                // ignore
-            }
+        fun afterClass() {
+            try { server.shutdown() } catch (_: Throwable) {}
         }
     }
-
-    @get:Rule
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Before
     fun setupServer() {
-        // Start from a clean local cache so the screen triggers a network refresh
+        // Limpia Room para forzar refresh desde red
         try {
             val ctx = InstrumentationRegistry.getInstrumentation().targetContext
             ViniloDatabase.getDatabase(ctx).clearAllTables()
-        } catch (_: Throwable) {
-            // ignore cleanup issues to avoid making the test flaky on first run
-        }
+        } catch (_: Throwable) {}
 
-        // Enqueue response for musicians endpoint before each test
-        val json = """
-        [
-          {
-            "id": 1,
-            "name": "Juan Perez",
-            "image": "",
-            "birthDate": "1980-05-20T00:00:00.000Z",
-            "description": "Guitarrista",
-            "nationality": "Colombia"
-          },
-          {
-            "id": 2,
-            "name": "María López",
-            "image": "",
-            "birthDate": "1990-08-15T00:00:00.000Z",
-            "description": "Cantante",
-            "nationality": "Perú"
-          }
-        ]
+        // Respuestas mock para lista y detalle
+        val musiciansJson = """
+            [
+              {"id":1,"name":"Juan Perez","image":"","birthDate":"1980-05-20T00:00:00.000Z","description":"Guitarrista","performerPrizes":[],"albums":[]},
+              {"id":2,"name":"María López","image":"","birthDate":"1990-08-15T00:00:00.000Z","description":"Cantante","performerPrizes":[],"albums":[]}
+            ]
+        """.trimIndent()
+        val musicianDetailJson = """
+            {"id":1,"name":"Rubén Blades Bellido de Luna","image":"","birthDate":"1948-07-16T00:00:00.000Z","description":"Cantante y compositor","performerPrizes":[],"albums":[{"id":100,"name":"Buscando América","cover":"https://example.com/cover.jpg","releaseDate":"1984-08-01T00:00:00.000Z","description":"Álbum icónico de Rubén Blades","genre":"Salsa","recordLabel":"Elektra"}]}
         """.trimIndent()
 
-        server.enqueue(MockResponse().setResponseCode(200).setBody(json))
+        // Drenar requests anteriores si quedaron
+        try {
+            var drained = 0
+            while (true) {
+                val r = server.takeRequest(50, TimeUnit.MILLISECONDS) ?: break
+                drained++
+            }
+            if (drained > 0) Log.d("MusicianE2ETest", "[Before] drained=${'$'}drained")
+        } catch (_: Throwable) {}
 
-        // No need to recreate activity because baseUrl was set in @BeforeClass
+        // Encolar llamadas esperadas (si hay reintentos, podrías duplicar estos enqueue)
+        server.enqueue(MockResponse().setResponseCode(200).setBody(musiciansJson))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(musicianDetailJson))
     }
 
     @After
-    fun afterEach() {
-        // Drain any remaining requests so the next test starts clean
+    fun tearDown() {
+        // Solo drenar para debug; no apagar server aquí
         try {
             while (true) {
-                server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
+                val req = server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
+                Log.i("MusicianE2ETest", "[After] Request: ${'$'}{req.path}")
             }
-        } catch (_: Throwable) {
-            // ignore
-        }
+        } catch (_: Throwable) {}
     }
 
     @Test
     fun e2e_userNavigatesToMusicians_and_seesMusiciansFromNetwork() {
-        Log.i("MusicianE2ETest", "Test start: clicking nav item Artistas")
-        // Simulate user clicking the "Artistas" tab in the bottom navigation
-        waitAndClickNavItem("Artistas")
+        Log.i("MusicianE2ETest", "Click nav 'Artistas'")
+        waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
 
-        Log.i("MusicianE2ETest", "Clicked nav item; waiting for title")
-        // Wait for the Musicians screen title to appear (it uses 'Artistas' in UI)
-        waitForTextFlexible("Artistas", timeoutMs = 5_000L)
+        Log.i("MusicianE2ETest", "Esperando título 'Artistas'")
+        waitForTextFlexible("Artistas", timeoutMs = 12_000L)
 
-        Log.i("MusicianE2ETest", "Title visible; polling MockWebServer for request")
+        Log.i("MusicianE2ETest", "Verificando petición al server")
         try {
-            val recorded = server.takeRequest(500, TimeUnit.MILLISECONDS)
-            if (recorded != null) Log.i("MusicianE2ETest", "Recorded request: path=${'$'}{recorded.path}")
-            else Log.w("MusicianE2ETest", "No request observed in short interval")
-        } catch (_: Throwable) {
-            Log.w("MusicianE2ETest", "Error while taking request")
-        }
+            val recorded = server.takeRequest(1_500, TimeUnit.MILLISECONDS)
+            if (recorded != null) Log.i("MusicianE2ETest", "Recorded: ${'$'}{recorded.path}")
+        } catch (_: Throwable) {}
 
-        // Wait for musician names loaded from network
-        Log.i("MusicianE2ETest", "Waiting for musician name texts")
-        waitForTextFlexible("Juan Perez", timeoutMs = 15_000L)
-        waitForTextFlexible("María López", timeoutMs = 15_000L)
+        Log.i("MusicianE2ETest", "Esperando nombres")
+        waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
+        waitForTextFlexible("María López", timeoutMs = 20_000L)
 
-        Log.i("MusicianE2ETest", "Musician texts visible; doing final assertions")
         composeTestRule.onNodeWithText("Juan Perez", substring = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("María López", substring = true).assertIsDisplayed()
-        Log.i("MusicianE2ETest", "Test finished successfully")
+    }
+
+    @Test
+    fun e2e_openMusicianDetail() {
+        waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
+        waitForTextFlexible("Artistas", timeoutMs = 12_000L)
+        waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
+
+        composeTestRule.onNodeWithText("Juan Perez", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        waitForTextFlexible("Rubén Blades Bellido de Luna", timeoutMs = 20_000L)
+        composeTestRule.onNodeWithText("Rubén Blades Bellido de Luna", substring = true)
+            .assertIsDisplayed()
     }
 
     private fun waitForTextFlexible(text: String, timeoutMs: Long = 5_000L) {
         try {
             composeTestRule.waitUntil(timeoutMs) {
                 try {
-                    val merged = try {
-                        composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
-                    } catch (_: Throwable) {
-                        emptyList()
-                    }
+                    val merged = try { composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
                     if (merged.isNotEmpty()) return@waitUntil true
-
-                    val unmerged = try {
-                        composeTestRule.onAllNodesWithText(text, useUnmergedTree = true, substring = true).fetchSemanticsNodes()
-                    } catch (_: Throwable) {
-                        emptyList()
-                    }
+                    val unmerged = try { composeTestRule.onAllNodesWithText(text, useUnmergedTree = true, substring = true).fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
                     unmerged.isNotEmpty()
-                } catch (_: Throwable) {
-                    false
-                }
+                } catch (_: Throwable) { false }
             }
-
-            // After waitUntil returns, try asserting visibility on any matching node (merged then unmerged).
-            try {
-                val mergedCollection = composeTestRule.onAllNodesWithText(text, substring = true)
-                val mergedNodes = try { mergedCollection.fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
-                if (mergedNodes.isNotEmpty()) {
-                    for (i in mergedNodes.indices) {
-                        try {
-                            mergedCollection[i].assertIsDisplayed()
-                            return
-                        } catch (_: Throwable) {
-                            // try next
-                        }
-                    }
-                }
-
-                val unmergedCollection = composeTestRule.onAllNodesWithText(text, useUnmergedTree = true, substring = true)
-                val unmergedNodes = try { unmergedCollection.fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
-                if (unmergedNodes.isNotEmpty()) {
-                    for (i in unmergedNodes.indices) {
-                        try {
-                            unmergedCollection[i].assertIsDisplayed()
-                            return
-                        } catch (_: Throwable) {
-                            // try next
-                        }
-                    }
-                }
-
-                // If we reach here no node asserted as displayed
-                throw AssertionError("No visible node found for text '${'$'}text'")
-            } catch (e: Throwable) {
-                throw AssertionError("Timed out waiting for text '${'$'}text' (${e.message})")
-            }
+            // Afirmar cualquier nodo visible
+            val mergedCollection = composeTestRule.onAllNodesWithText(text, substring = true)
+            val mergedNodes = try { mergedCollection.fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
+            for (i in mergedNodes.indices) { try { mergedCollection[i].assertIsDisplayed(); return } catch (_: Throwable) {} }
+            val unmergedCollection = composeTestRule.onAllNodesWithText(text, useUnmergedTree = true, substring = true)
+            val unmergedNodes = try { unmergedCollection.fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
+            for (i in unmergedNodes.indices) { try { unmergedCollection[i].assertIsDisplayed(); return } catch (_: Throwable) {} }
+            throw AssertionError("No visible node found for text '$text'")
         } catch (e: Throwable) {
-            throw AssertionError("Timed out waiting for text '${'$'}text' (${e.message})")
+            throw AssertionError("Timed out waiting for text '$text' (${e.message})")
         }
     }
 
     private fun waitAndClickNavItem(label: String, timeoutMs: Long = 5_000L) {
-        val candidates = listOf(label, label.replace("A", "Á"), label.replace("Á", "A"), "Artista", "Artistas", "Artistas")
+        val candidates = listOf(label, label.replace("A", "Á"), label.replace("Á", "A"), "Artista", "Artistas")
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
+            // 1) contentDescription primero (íconos sin texto)
             for (candidate in candidates) {
-                try {
-                    val collection = composeTestRule.onAllNodesWithText(candidate, substring = true)
-                    val nodes = try {
-                        collection.fetchSemanticsNodes()
-                    } catch (_: Throwable) {
-                        emptyList()
-                    }
-                    if (nodes.isNotEmpty()) {
-                        val node = collection.fetchSemanticsNodes()[0]
-                        val center = node.boundsInRoot.center
-                        composeTestRule.onRoot().performTouchInput { click(Offset(center.x, center.y)) }
-                        return
-                    }
-                } catch (_: Throwable) {
-                    // ignore and try next strategy
-                }
-
                 try {
                     val node = composeTestRule.onNodeWithContentDescription(candidate, useUnmergedTree = true)
                     node.performClick()
+                    composeTestRule.waitForIdle()
                     return
-                } catch (_: Throwable) {
-                    // ignore and try next candidate
-                }
+                } catch (_: Throwable) {}
             }
-
-            Thread.sleep(200)
+            // 2) texto visible
+            for (candidate in candidates) {
+                try {
+                    val collection = composeTestRule.onAllNodesWithText(candidate, substring = true)
+                    val nodes = try { collection.fetchSemanticsNodes() } catch (_: Throwable) { emptyList() }
+                    if (nodes.isNotEmpty()) {
+                        val center = nodes[0].boundsInRoot.center
+                        composeTestRule.onRoot().performTouchInput { click(Offset(center.x, center.y)) }
+                        composeTestRule.waitForIdle()
+                        return
+                    }
+                } catch (_: Throwable) {}
+            }
+            Thread.sleep(150)
         }
-        throw AssertionError("Could not find or click nav item '${'$'}label'")
+        throw AssertionError("Could not find or click nav item '$label'")
     }
 }

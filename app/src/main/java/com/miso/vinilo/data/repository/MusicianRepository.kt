@@ -68,6 +68,7 @@ class MusicianRepository(
                 val entities = result.data.map { MusicianEntity.fromDto(it) }
                 musicianDao.deleteAll()
                 musicianDao.insertAll(entities)
+                // entities already have lastUpdated timestamp set by MusicianEntity.fromDto()
             }
             is NetworkResult.Error -> {
                 // Silent fail - Room data remains available
@@ -75,6 +76,13 @@ class MusicianRepository(
         }
     }
 
+    /**
+     * Obtain a single musician's details from the network (used for detail screen).
+     * Returning NetworkResult preserves errors to surface to UI if needed.
+     */
+    suspend fun getMusician(id: Long): NetworkResult<MusicianDto> {
+        return serviceAdapter.getMusician(id)
+    }
 
     companion object {
         /**
