@@ -27,18 +27,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
 import com.miso.vinilo.ui.views.home.HomeScreen
+import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
+import com.miso.vinilo.ui.views.musicians.MusicianListContent
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
-import com.miso.vinilo.data.dto.MusicianDto
-import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,7 +80,7 @@ fun ViniloApp() {
                         )
                     },
                     // Force the label to use the app typography so we know it's using Montserrat
-                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall, letterSpacing = (-0.9).sp) },
                     selected = it == currentDestination,
                     onClick = { currentDestination = it }
                 )
@@ -87,7 +93,7 @@ fun ViniloApp() {
                 AppDestinations.INICIO -> HomeScreen(modifier = contentModifier)
                 AppDestinations.ALBUMES -> AlbumScreenHost(modifier = contentModifier)
                 AppDestinations.ARTISTAS -> MusicianScreenHost(modifier = contentModifier)
-                AppDestinations.COLECCIONISTAS -> CollectorsScreen(modifier = contentModifier)
+                AppDestinations.COLECCIONISTAS -> CollectorScreenHost(modifier = contentModifier)
             }
         }
     }
@@ -98,39 +104,101 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
     // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
     // creates its own repository from BuildConfig, so a factory is no longer necessary.
     val vm: AlbumViewModel = viewModel()
+    var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(AlbumViewModel.UiState.Idle)
+    if (selectedAlbumId == null) {
+        val state by vm.state.observeAsState(AlbumViewModel.UiState.Idle)
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
-    LaunchedEffect(Unit) {
-        if (state is AlbumViewModel.UiState.Idle) {
-            vm.loadAlbums()
+        LaunchedEffect(Unit) {
+            if (state is AlbumViewModel.UiState.Idle) {
+                vm.loadAlbums()
+            }
         }
-    }
 
-    // Pass the current state to the screen composable.
-    AlbumsScreen(state = state, modifier = modifier)
+        AlbumsScreen(
+            state = state,
+            modifier = modifier,
+            onAlbumClick = { albumId ->
+                selectedAlbumId = albumId
+            }
+        )
+    } else {
+        AlbumDetailScreen(
+            albumId = selectedAlbumId!!,
+            viewModel = vm,
+            onBackClick = { selectedAlbumId = null }
+        )
+    }
 }
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
+    // Get ViewModel from Koin DI for musicians, keep AlbumViewModel from the default factory
+    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
+    val albumVm: AlbumViewModel = viewModel()
+
+    var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    when {
+        selectedAlbumId != null -> {
+            // 💿 Detalle de álbum (reutilizamos tu pantalla existente)
+            AlbumDetailScreen(
+                albumId = selectedAlbumId!!,
+                viewModel = albumVm,
+                onBackClick = { selectedAlbumId = null }
+            )
+        }
+
+        selectedMusicianId == null -> {
+            // Lista de músicos
+            // Pasamos el ViewModel directo al composable; este consume Flow<PagingData> y
+            // controla su propio refresco (pull-to-refresh) a través de viewModel.refreshMusicians().
+            MusicianScreen(
+                viewModel = musicianVm,
+                modifier = modifier,
+                onMusicianClick = { id -> selectedMusicianId = id }
+            )
+        }
+
+        else -> {
+            val detailState by musicianVm.detailState
+                .observeAsState(MusicianViewModel.DetailUiState.Loading)
+
+            LaunchedEffect(selectedMusicianId) {
+                selectedMusicianId?.let { musicianVm.loadMusician(it) }
+            }
+
+            MusicianDetailScreen(
+                state = detailState,
+                onBackClick = { selectedMusicianId = null },
+                onAlbumClick = { albumId ->
+                    selectedAlbumId = albumId
+                },
+                modifier = modifier
+            )
+        }
+    }
+}
+
+@Composable
+fun CollectorScreenHost(modifier: Modifier = Modifier) {
     // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
     // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: MusicianViewModel = viewModel()
+    val vm: CollectorViewModel = viewModel()
 
     // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+    val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
 
     // Trigger loading only when the composable enters composition and the VM is idle.
     LaunchedEffect(Unit) {
-        if (state is MusicianViewModel.UiState.Idle) {
-            vm.loadMusicians()
+        if (state is CollectorViewModel.UiState.Idle) {
+            vm.loadCollectors()
         }
     }
 
     // Pass the current state to the screen composable.
-    MusicianScreen(state = state, modifier = modifier)
+    CollectorsScreen(state = state, modifier = modifier)
 }
 
 enum class AppDestinations(
@@ -171,7 +239,9 @@ fun AlbumScreenPreview() {
                 releaseDate = "1984-08-01T00:00:00.000Z",
                 description = "Buscando América es el primer álbum de la banda de Rubén Blades y Seis del Solar lanzado en 1984. La producción, bajo el sello Elektra, fusiona diferentes ritmos musicales tales como la salsa, reggae, rock, y el jazz latino. El disco fue grabado en Eurosound Studios en Nueva York entre mayo y agosto de 1983.",
                 genre = "Salsa",
-                recordLabel = "Elektra"
+                recordLabel = "Elektra",
+                tracks = emptyList(),
+                performers = emptyList()
             ),
             AlbumDto(
                 id = 101,
@@ -180,7 +250,9 @@ fun AlbumScreenPreview() {
                 releaseDate = "1984-08-01T00:00:00.000Z",
                 description = "Poeta del pueblo es el primer álbum de estudio de Rubén Blades lanzado en 1984. La producción, bajo el sello Elektra, fusiona diferentes ritmos musicales tales como la salsa, reggae, rock, y el jazz latino.",
                 genre = "Salsa",
-                recordLabel = "Elektra"
+                recordLabel = "Elektra",
+                tracks = emptyList(),
+                performers = emptyList()
             ),
             AlbumDto(
                 id = 102,
@@ -189,12 +261,15 @@ fun AlbumScreenPreview() {
                 releaseDate = "1976-12-10T00:00:00.000Z",
                 description = "A Day at the Races es el quinto álbum de estudio de la banda de rock británica Queen. Fue lanzado el 10 de diciembre de 1976 por EMI Records en el Reino Unido y por Elektra Records en los Estados Unidos.",
                 genre = "Rock",
-                recordLabel = "EMI"
+                recordLabel = "EMI",
+                tracks = emptyList(),
+                performers = emptyList()
             )
         )
 
         AlbumsScreen(
-            state = AlbumViewModel.UiState.Success(sample)
+            state = AlbumViewModel.UiState.Success(sample),
+            onAlbumClick = {}
         )
     }
 }
@@ -207,21 +282,30 @@ fun MusicianScreenPreview() {
             MusicianDto(
                 id = 100,
                 name = "Adele Laurie Blue Adkins",
-                image = "",
+                image = "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
                 description = "Singer",
                 birthDate = "1988-05-05T00:00:00.000Z"
             ),
             MusicianDto(
                 id = 101,
                 name = "Metallica",
-                image = "",
+                image = "https://cdn.shopify.com/s/files/1/0275/3095/products/image_4931268b-7acf-4702-9c55-b2b3a03ed999_1024x1024.jpg",
                 description = "Band",
                 birthDate = "1981-10-28T00:00:00.000Z"
+            ),
+            MusicianDto(
+                id = 102,
+                name = "Queen",
+                image = "https://i.pinimg.com/564x/ab/50/f1/ab50f1be010a3b5e981207a97e00f8ca.jpg",
+                description = "Rock Band",
+                birthDate = "1970-06-27T00:00:00.000Z"
             )
         )
 
-        MusicianScreen(
-            state = MusicianViewModel.UiState.Success(sample)
+        // Use list-based preview composable (no ViewModel required)
+        MusicianListContent(
+            musicians = sample,
+            onMusicianClick = {}
         )
     }
 }

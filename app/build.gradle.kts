@@ -3,12 +3,23 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("jacoco")
 }
 
 android {
     namespace = "com.miso.vinilo"
     compileSdk {
         version = release(36)
+    }
+
+    lint {
+        xmlReport = true
+        htmlReport = true
+        sarifReport = false
+        abortOnError = false
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     defaultConfig {
@@ -69,6 +80,7 @@ dependencies {
     // Compose LiveData interop (provides observeAsState for LiveData)
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -83,6 +95,16 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.kotlin.codegen)
+
+    // Room for local database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
+    ksp(libs.androidx.room.compiler)
+
+    // Paging3 for pagination
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
 
     // Coil for image loading in Compose
     implementation("io.coil-kt:coil-compose:2.7.0")
@@ -105,6 +127,14 @@ dependencies {
     // Koin test helpers
     testImplementation("io.insert-koin:koin-test:4.1.1")
     testImplementation("io.insert-koin:koin-test-junit4:4.1.1")
+    // Room testing
+    androidTestImplementation(libs.androidx.room.runtime)
+    androidTestImplementation(libs.androidx.room.ktx)
+    // Paging testing
+    testImplementation("androidx.paging:paging-common-ktx:3.3.0")
+    // Si usan Mockito-Kotlin
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
+    testImplementation("org.mockito:mockito-core:5.+")
     // Junit and Espresso config
     testImplementation("junit:junit:4.12")
     androidTestImplementation("com.android.support.test:runner:1.0.1")
@@ -117,4 +147,24 @@ dependencies {
 
     // Google Play Services Base (contains ProviderInstaller)
     implementation("com.google.android.gms:play-services-base:18.2.0")
+}
+
+// Jacoco Configuration
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports { xml.required.set(true); html.required.set(true); csv.required.set(false) }
+
+    val fileFilter = listOf("**/R.class","**/R$*.class","**/BuildConfig.*","**/Manifest*.*","**/*Test*.*","android/**/*.*","**/*$*")
+    val ktDebug = fileTree("$buildDir/tmp/kotlin-classes/debug") { exclude(fileFilter) }
+    val javaDebug = fileTree("$buildDir/intermediates/javac/debug/classes") { exclude(fileFilter) }
+    classDirectories.setFrom(files(ktDebug, javaDebug))
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(fileTree(buildDir) {
+        include("jacoco/testDebugUnitTest.exec", "outputs/unit_test_code_coverage/**/testDebugUnitTest.exec")
+    })
 }

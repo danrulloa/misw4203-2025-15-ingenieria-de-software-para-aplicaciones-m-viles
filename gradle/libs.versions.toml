@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.0"
+agp = "8.13.1"
 kotlin = "2.1.0" # Bump Kotlin to match newer library metadata (Kotlin 2.2.x) used by test/runtime deps
 ksp = "2.1.0-1.0.29"
 coreKtx = "1.17.0"
@@ -15,6 +15,12 @@ compose-runtime = "1.7.6"
 # Added versions for networking
 retrofit = "2.9.0"
 moshi = "1.15.2"
+foundation = "1.9.4"
+
+# Room and Paging
+room = "2.6.1"
+paging = "3.3.0"
+paging-compose = "3.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -41,6 +47,17 @@ converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", 
 moshi = { group = "com.squareup.moshi", name = "moshi", version.ref = "moshi" }
 moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }
 moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", version.ref = "moshi" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+
+# Room libs
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+
+# Paging3 libs
+androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "paging" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging-compose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
