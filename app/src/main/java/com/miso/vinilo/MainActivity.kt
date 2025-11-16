@@ -1,7 +1,6 @@
 package com.miso.vinilo
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -39,6 +38,7 @@ import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
+import com.miso.vinilo.ui.views.musicians.MusicianListContent
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
@@ -133,7 +133,8 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    val musicianVm: MusicianViewModel = viewModel()
+    // Get ViewModel from Koin DI for musicians, keep AlbumViewModel from the default factory
+    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
     val albumVm: AlbumViewModel = viewModel()
 
     var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -151,20 +152,12 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
 
         selectedMusicianId == null -> {
             // Lista de músicos
-            val state by musicianVm.state.observeAsState(MusicianViewModel.UiState.Idle)
-
-            LaunchedEffect(Unit) {
-                if (state is MusicianViewModel.UiState.Idle) {
-                    musicianVm.loadMusicians()
-                }
-            }
-
+            // Pasamos el ViewModel directo al composable; este consume Flow<PagingData> y
+            // controla su propio refresco (pull-to-refresh) a través de viewModel.refreshMusicians().
             MusicianScreen(
-                state = state,
+                viewModel = musicianVm,
                 modifier = modifier,
-                onMusicianClick = { id ->
-                    selectedMusicianId = id
-                }
+                onMusicianClick = { id -> selectedMusicianId = id }
             )
         }
 
@@ -289,21 +282,29 @@ fun MusicianScreenPreview() {
             MusicianDto(
                 id = 100,
                 name = "Adele Laurie Blue Adkins",
-                image = "",
+                image = "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
                 description = "Singer",
                 birthDate = "1988-05-05T00:00:00.000Z"
             ),
             MusicianDto(
                 id = 101,
                 name = "Metallica",
-                image = "",
+                image = "https://cdn.shopify.com/s/files/1/0275/3095/products/image_4931268b-7acf-4702-9c55-b2b3a03ed999_1024x1024.jpg",
                 description = "Band",
                 birthDate = "1981-10-28T00:00:00.000Z"
+            ),
+            MusicianDto(
+                id = 102,
+                name = "Queen",
+                image = "https://i.pinimg.com/564x/ab/50/f1/ab50f1be010a3b5e981207a97e00f8ca.jpg",
+                description = "Rock Band",
+                birthDate = "1970-06-27T00:00:00.000Z"
             )
         )
 
-        MusicianScreen(
-            state = MusicianViewModel.UiState.Success(sample),
+        // Use list-based preview composable (no ViewModel required)
+        MusicianListContent(
+            musicians = sample,
             onMusicianClick = {}
         )
     }

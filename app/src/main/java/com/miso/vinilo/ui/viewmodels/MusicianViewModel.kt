@@ -1,41 +1,55 @@
 package com.miso.vinilo.ui.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.miso.vinilo.data.dto.MusicianDto
-import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.repository.MusicianRepository
-import com.miso.vinilo.data.adapter.NetworkConfig
-import com.miso.vinilo.data.dto.AlbumDto
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import com.miso.vinilo.data.adapter.NetworkResult
+import com.miso.vinilo.data.dto.AlbumDto
 
 /**
- * ViewModel that exposes musician list state to the UI.
- * It now depends directly on [MusicianRepository].
+ * ViewModel that exposes paginated musician data with pull-to-refresh support.
+ * Uses hybrid strategy: shows Room data immediately + refreshes in background.
  */
 class MusicianViewModel(
     private val repository: MusicianRepository
 ) : ViewModel() {
 
-    private val _state = MutableLiveData<UiState>(UiState.Idle)
-    val state: LiveData<UiState> = _state
-
-    // Removed eager fetch from init: the UI should explicitly request data.
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     /**
-     * Triggers a network load of musicians and updates `state` accordingly.
-     * This method must be called by the UI (or coordination layer) when data is required.
+     * Flow of paginated musicians (9 per page).
+     * cachedIn ensures the data survives configuration changes.
      */
-    fun loadMusicians() {
+    val musicians: Flow<PagingData<MusicianDto>> = repository.getPagedMusicians()
+        .cachedIn(viewModelScope)
+
+    init {
+        // Automatic background refresh on initialization
+        refreshInBackground()
+    }
+
+    /**
+     * Manual refresh triggered by pull-to-refresh.
+     * Forces a network call and updates the refresh indicator.
+     */
+    fun refreshMusicians() {
         viewModelScope.launch {
-            _state.value = UiState.Loading
-            when (val result = repository.getMusicians()) {
-                is NetworkResult.Success ->
-                    _state.value = UiState.Success(result.data)
-                is NetworkResult.Error ->
-                    _state.value = UiState.Error(result.message)
+            _isRefreshing.value = true
+            try {
+                repository.forceRefresh()
+            } finally {
+                _isRefreshing.value = false
             }
         }
     }
@@ -73,13 +87,13 @@ class MusicianViewModel(
 
 
     /**
-     * UI-friendly sealed class representing Idle/Loading/Success/Error states.
+     * Silent background refresh (only if data is stale).
+     * Doesn't show loading indicator.
      */
-    sealed class UiState {
-        object Idle : UiState()
-        object Loading : UiState()
-        data class Success(val data: List<MusicianDto>) : UiState()
-        data class Error(val message: String) : UiState()
+    private fun refreshInBackground() {
+        viewModelScope.launch {
+            repository.refreshIfNeeded()
+        }
     }
 
     data class AlbumUi(
@@ -109,16 +123,7 @@ class MusicianViewModel(
         )
     }
 
-    /**
-     * Convenience secondary constructor to quickly create a ViewModel wired to the network
-     * implementation. Prefer passing a repository in production (DI) or tests.
-     */
-    constructor(baseUrl: String) : this(MusicianRepository.create(baseUrl))
-
-    /**
-     * No-arg constructor so the default ViewModelProvider (or Compose's viewModel()) can
-     * instantiate this ViewModel without a factory. It now delegates to the repository
-     * created from the mutable NetworkConfig so tests can override the base URL at runtime.
-     */
-    constructor() : this(MusicianRepository.create(NetworkConfig.baseUrl))
+    // NOTE: ViewModel instances should be created by DI (Koin) or by providing a Repository.
+    // Secondary convenience constructors were removed because repository creation requires
+    // a MusicianDao instance (Room) which is not available here.
 }

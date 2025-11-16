@@ -10,10 +10,14 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import android.util.Log
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
@@ -33,11 +39,45 @@ import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicianScreen(
-    state: MusicianViewModel.UiState?,
+    viewModel: MusicianViewModel,
     modifier: Modifier = Modifier,
-    onMusicianClick: (Long) -> Unit
+    onMusicianClick: (Long) -> Unit = {}
+) {
+    val musicians = viewModel.musicians.collectAsLazyPagingItems()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+
+    Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(
+            text = "Artistas",
+            style = MaterialTheme.typography.titleLarge,
+            color = BaseWhite,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            textAlign = TextAlign.Center
+        )
+
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.refreshMusicians() },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            MusicianPagedList(musicians = musicians, onMusicianClick = onMusicianClick)
+        }
+    }
+}
+
+/**
+ * Stateless composable that displays a list of musicians from a regular list (for previews/tests).
+ */
+@Composable
+fun MusicianListContent(
+    musicians: List<MusicianDto>,
+    modifier: Modifier = Modifier,
+    onMusicianClick: (Long) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -54,47 +94,37 @@ fun MusicianScreen(
             textAlign = TextAlign.Center
         )
 
-        when (val s = state) {
-            null,
-            is MusicianViewModel.UiState.Idle,
-            is MusicianViewModel.UiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "Cargando...", color = BaseWhite)
-                }
-            }
-            is MusicianViewModel.UiState.Error -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = s.message, color = BaseWhite)
-                }
-            }
-            is MusicianViewModel.UiState.Success -> {
-                MusicianList(
-                    musicians = s.data,
-                    onMusicianClick = onMusicianClick,
-                    modifier = Modifier.fillMaxSize()
-                )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(
+                items = musicians,
+                key = { musician -> musician.id }
+            ) { musician ->
+                MusicianRow(musician = musician, onClick = { onMusicianClick(musician.id) })
             }
         }
     }
 }
 
-
 @Composable
-private fun MusicianList(
-    musicians: List<MusicianDto>,
+private fun MusicianPagedList(
+    musicians: LazyPagingItems<MusicianDto>,
     onMusicianClick: (Long) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        // Use stable key to avoid unnecessary row recompositions/rebinds
-        items(items = musicians, key = { it.id }) { musician ->
-            MusicianRow(
-                musician = musician,
-                onClick = { onMusicianClick(musician.id) }
-            )
+        items(
+            count = musicians.itemCount,
+            key = { index -> musicians[index]?.id ?: index }
+        ) { index ->
+            musicians[index]?.let { musician ->
+                MusicianRow(musician = musician, onClick = { onMusicianClick(musician.id) })
+            }
         }
     }
 }
@@ -132,8 +162,8 @@ private fun MusicianRow(
                 val userAgent =
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 val referer = try {
-                    val u = java.net.URL(resolvedImage)
-                    "${u.protocol}://${u.host}/"
+                    val url = java.net.URL(resolvedImage)
+                    "${'$'}{url.protocol}://${'$'}{url.host}/"
                 } catch (_: Exception) {
                     "https://commons.wikimedia.org/"
                 }
@@ -145,17 +175,16 @@ private fun MusicianRow(
                         .addHeader("User-Agent", userAgent)
                         .addHeader("Referer", referer)
                         .listener(
-                            onSuccess = { _, result ->
+                            onSuccess = { _, _ ->
                                 Log.d(
                                     "MusicianRow",
-                                    "Coil success: $resolvedImage, size=${result.drawable.intrinsicWidth}x${result.drawable.intrinsicHeight}"
+                                    "Coil success: $resolvedImage"
                                 )
                             },
-                            onError = { _, result ->
+                            onError = { _, _ ->
                                 Log.e(
                                     "MusicianRow",
-                                    "Coil failed to load image: $resolvedImage",
-                                    result.throwable
+                                    "Coil failed to load image: $resolvedImage"
                                 )
                             }
                         )
@@ -202,7 +231,7 @@ private fun MusicianRow(
                 }
             } else {
                 // no image -> show initials
-                Log.d("MusicianRow", "No image, showing initials for ${musician.name}")
+                Log.d("MusicianRow", "No image, showing initials for ${'$'}{musician.name}")
                 val initials = musician.name
                     .split(" ")
                     .mapNotNull { it.firstOrNull()?.toString() }
