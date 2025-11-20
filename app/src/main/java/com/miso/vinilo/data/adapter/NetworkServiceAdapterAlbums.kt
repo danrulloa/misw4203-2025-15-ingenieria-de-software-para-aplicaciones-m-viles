@@ -1,6 +1,9 @@
 package com.miso.vinilo.data.adapter
 
+import android.util.Log
 import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.CommentDto
+import com.miso.vinilo.data.dto.NewCommentDto
 import com.miso.vinilo.data.adapter.retrofit.AlbumApi
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -9,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+
+private const val TAG = "vinilo"
 
 /**
  * Network service adapter that uses a network API to retrieve album data.
@@ -23,12 +28,11 @@ class NetworkServiceAdapterAlbums(
 
     /**
      * Fetches a list of albums from the network API.
-     * Executes the call on the injected IO dispatcher to avoid blocking the UI thread.
      * @return A [NetworkResult] containing a list of [AlbumDto] on success or an [Error].
      */
     suspend fun getAlbums(): NetworkResult<List<AlbumDto>> {
         return try {
-            val dtos: List<AlbumDto> = withContext(ioDispatcher) {
+            val dtos = withContext(ioDispatcher) { 
                 api.getAlbums()
             }
             NetworkResult.Success(dtos)
@@ -43,13 +47,34 @@ class NetworkServiceAdapterAlbums(
      * @return A [NetworkResult] containing an [AlbumDto] on success or an [Error].
      */
     suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
+        Log.d(TAG, "getAlbum - before withContext - thread=${Thread.currentThread().name}")
         return try {
             val dto = withContext(ioDispatcher) {
+                Log.d(TAG, "getAlbum - inside withContext (IO) - thread=${Thread.currentThread().name}")
                 api.getAlbum(id)
             }
+            Log.d(TAG, "getAlbum - after withContext - thread=${Thread.currentThread().name} - received=${dto.name}")
             NetworkResult.Success(dto)
         } catch (e: Exception) {
             NetworkResult.Error("Unknown network error", e)
+        }
+    }
+
+    /**
+     * Posts a new comment to a specific album.
+     * @param albumId The ID of the album to post the comment to.
+     * @param comment The new comment to post.
+     * @return A [NetworkResult] containing the created [CommentDto] on success or an [Error].
+     */
+    suspend fun postComment(albumId: Long, comment: NewCommentDto): NetworkResult<CommentDto> {
+        return try {
+            val createdComment = withContext(ioDispatcher) {
+                api.postComment(albumId, comment)
+            }
+            NetworkResult.Success(createdComment)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post comment", e) // Added this log
+            NetworkResult.Error("Failed to post comment", e)
         }
     }
 
