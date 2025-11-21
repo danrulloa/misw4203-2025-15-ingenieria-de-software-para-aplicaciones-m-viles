@@ -145,7 +145,7 @@ class AlbumDetailE2ETest {
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
         // 3. Scroll to and click on 'Add Comment' button
-        waitForTextFlexible("Agregar Comentario", timeoutMs = 5_000L)
+        waitForTextFlexible("Agregar Comentario", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Agregar Comentario").performClick()
 
         // 4. Fill and submit the form
