@@ -61,7 +61,7 @@ class AlbumViewModel(
 
     fun postComment(albumId: Long, rating: Int, description: String) {
         // For now, we'll use a hardcoded collector ID as there's no login system.
-        val collectorId = 1L
+        val collectorId = 100L
         val newComment = NewCommentDto(
             rating = rating,
             description = description,
@@ -78,6 +78,10 @@ class AlbumViewModel(
                 is NetworkResult.Error -> _postCommentState.value = PostCommentUiState.Error(result.message)
             }
         }
+    }
+
+    fun resetPostCommentState() {
+        _postCommentState.value = PostCommentUiState.Idle
     }
 
     /**

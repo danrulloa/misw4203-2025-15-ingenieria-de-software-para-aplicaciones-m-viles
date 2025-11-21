@@ -275,6 +275,7 @@ fun AddCommentForm(
     LaunchedEffect(postState) {
         if (postState is AlbumViewModel.PostCommentUiState.Success) {
             onCommentPosted()
+            viewModel.resetPostCommentState() // Reset the state
         }
     }
 
