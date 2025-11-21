@@ -1,6 +1,5 @@
 package com.miso.vinilo.ui.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -48,9 +47,7 @@ class AlbumViewModel(
     }
 
     fun loadAlbum(id: Long) {
-        Log.d(TAG, "loadAlbum - before launch - thread=${Thread.currentThread().name}")
         viewModelScope.launch {
-            Log.d(TAG, "loadAlbum - inside coroutine - thread=${Thread.currentThread().name}")
             _albumDetailState.value = AlbumDetailUiState.Loading
             when (val result = repository.getAlbum(id)) {
                 is NetworkResult.Success -> _albumDetailState.value = AlbumDetailUiState.Success(result.data)

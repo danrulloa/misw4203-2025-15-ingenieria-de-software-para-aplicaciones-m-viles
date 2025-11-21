@@ -1,6 +1,5 @@
 package com.miso.vinilo.data.adapter
 
-import android.util.Log
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.CommentDto
 import com.miso.vinilo.data.dto.NewCommentDto
@@ -47,13 +46,10 @@ class NetworkServiceAdapterAlbums(
      * @return A [NetworkResult] containing an [AlbumDto] on success or an [Error].
      */
     suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
-        Log.d(TAG, "getAlbum - before withContext - thread=${Thread.currentThread().name}")
         return try {
             val dto = withContext(ioDispatcher) {
-                Log.d(TAG, "getAlbum - inside withContext (IO) - thread=${Thread.currentThread().name}")
                 api.getAlbum(id)
             }
-            Log.d(TAG, "getAlbum - after withContext - thread=${Thread.currentThread().name} - received=${dto.name}")
             NetworkResult.Success(dto)
         } catch (e: Exception) {
             NetworkResult.Error("Unknown network error", e)
@@ -73,7 +69,6 @@ class NetworkServiceAdapterAlbums(
             }
             NetworkResult.Success(createdComment)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to post comment", e) // Added this log
             NetworkResult.Error("Failed to post comment", e)
         }
     }
