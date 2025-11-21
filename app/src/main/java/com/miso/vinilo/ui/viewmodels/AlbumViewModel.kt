@@ -11,6 +11,8 @@ import com.miso.vinilo.data.dto.CollectorIdDto
 import com.miso.vinilo.data.dto.CommentDto
 import com.miso.vinilo.data.dto.NewCommentDto
 import com.miso.vinilo.data.repository.AlbumRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 private const val TAG = "vinilo"
@@ -29,8 +31,8 @@ class AlbumViewModel(
     private val _albumDetailState = MutableLiveData<AlbumDetailUiState>(AlbumDetailUiState.Idle)
     val albumDetailState: LiveData<AlbumDetailUiState> = _albumDetailState
 
-    private val _postCommentState = MutableLiveData<PostCommentUiState>(PostCommentUiState.Idle)
-    val postCommentState: LiveData<PostCommentUiState> = _postCommentState
+    private val _postCommentState = MutableStateFlow<PostCommentUiState>(PostCommentUiState.Idle)
+    val postCommentState = _postCommentState.asStateFlow()
 
     /**
      * Triggers a network load of albums and updates `state` accordingly.

@@ -125,6 +125,7 @@ class AlbumViewModelTest {
 
         // Act
         viewModel.resetPostCommentState()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Assert
         val state = viewModel.postCommentState.value

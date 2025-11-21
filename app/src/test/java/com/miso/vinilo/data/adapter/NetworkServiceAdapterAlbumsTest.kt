@@ -58,7 +58,7 @@ class NetworkServiceAdapterAlbumsTest {
         assertEquals("This is a fantastic album!", result.data.description)
         
         val request = mockWebServer.takeRequest()
-        assertEquals("/albums/$albumId/comments/", request.path)
+        assertEquals("/albums/$albumId/comments", request.path)
         assertEquals("POST", request.method)
     }
 
@@ -76,6 +76,6 @@ class NetworkServiceAdapterAlbumsTest {
         assertTrue(result is NetworkResult.Error)
         
         val request = mockWebServer.takeRequest()
-        assertEquals("/albums/$albumId/comments/", request.path)
+        assertEquals("/albums/$albumId/comments", request.path)
     }
 }
