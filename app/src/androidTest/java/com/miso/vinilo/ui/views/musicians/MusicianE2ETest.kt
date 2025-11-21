@@ -12,6 +12,11 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -81,6 +86,48 @@ class MusicianE2ETest {
             {"id":1,"name":"Rubén Blades Bellido de Luna","image":"","birthDate":"1948-07-16T00:00:00.000Z","description":"Cantante y compositor","performerPrizes":[],"albums":[{"id":100,"name":"Buscando América","cover":"https://example.com/cover.jpg","releaseDate":"1984-08-01T00:00:00.000Z","description":"Álbum icónico de Rubén Blades","genre":"Salsa","recordLabel":"Elektra"}]}
         """.trimIndent()
 
+        val albumsListJson = """
+            [
+              {
+                "id": 100,
+                "name": "Buscando América",
+                "cover": "https://example.com/cover.jpg",
+                "releaseDate": "1984-08-01T00:00:00.000Z",
+                "description": "Álbum icónico de Rubén Blades",
+                "genre": "Salsa",
+                "recordLabel": "Elektra"
+              }
+            ]
+        """.trimIndent()
+
+        val albumDetailJson = """
+            {
+              "id": 100,
+              "name": "Buscando América",
+              "cover": "https://example.com/cover.jpg",
+              "releaseDate": "1984-08-01T00:00:00.000Z",
+              "description": "Álbum icónico de Rubén Blades",
+              "genre": "Salsa",
+              "recordLabel": "Elektra",
+              "tracks": [],
+              "performers": []
+            }
+        """.trimIndent()
+
+         val addAlbumResponseJson = """
+            {
+              "id": 100,
+              "name": "Buscando América",
+              "cover": "https://example.com/cover.jpg",
+              "releaseDate": "1984-08-01T00:00:00.000Z",
+              "description": "Álbum icónico de Rubén Blades",
+              "genre": "Salsa",
+              "recordLabel": "Elektra",
+              "tracks": [],
+              "performers": []
+            }
+        """.trimIndent()
+
         // Drenar requests anteriores si quedaron
         try {
             var drained = 0
@@ -91,9 +138,35 @@ class MusicianE2ETest {
             if (drained > 0) Log.d("MusicianE2ETest", "[Before] drained=${'$'}drained")
         } catch (_: Throwable) {}
 
-        // Encolar llamadas esperadas (si hay reintentos, podrías duplicar estos enqueue)
-        server.enqueue(MockResponse().setResponseCode(200).setBody(musiciansJson))
-        server.enqueue(MockResponse().setResponseCode(200).setBody(musicianDetailJson))
+        server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+            override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse {
+                val path = request.path ?: ""
+                android.util.Log.i("MusicianE2ETest", "Dispatcher path=$path")
+
+                return when {
+                    path.startsWith("/musicians/1") ->
+                        MockResponse().setResponseCode(200).setBody(musicianDetailJson)
+
+                    path.startsWith("/musicians") ->
+                        MockResponse().setResponseCode(200).setBody(musiciansJson)
+
+                    path.startsWith("/albums/100") ->
+                        MockResponse().setResponseCode(200).setBody(albumDetailJson)
+
+                    path.startsWith("/albums") ->
+                        MockResponse().setResponseCode(200).setBody(albumsListJson)
+
+                    path.startsWith("/musicians/1/albums/100") && request.method == "POST" -> {
+                        MockResponse()
+                            .setResponseCode(200)
+                            .setBody(addAlbumResponseJson)
+                    }
+
+                    else ->
+                        MockResponse().setResponseCode(404).setBody("""{"error":"not mocked"}""")
+                }
+            }
+        }
     }
 
     @After
@@ -144,6 +217,100 @@ class MusicianE2ETest {
             .assertIsDisplayed()
     }
 
+    @Test
+    fun e2e_addAlbumMode_showsSearchAndAlbums() {
+        // 1) Ir a Artistas y abrir detalle de Juan
+        waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
+        waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
+
+        composeTestRule.onNodeWithText("Juan Perez", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        // 2) Esperar encabezado "Álbumes" y el álbum "Buscando América" en el carrusel normal
+        waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
+        waitForTextFlexible("Buscando América", timeoutMs = 20_000L)
+
+        // 3) Pulsar el botón "Añadir álbum"
+        waitForTextFlexible("Añadir álbum", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Añadir álbum", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        // 4) Comprobar que aparece el buscador ("Busca el álbum" es el placeholder)
+        waitForTextFlexible("Busca el álbum", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Busca el álbum", substring = true)
+            .assertIsDisplayed()
+        // si quieres simular que el usuario toca el campo:
+        // .performClick()
+
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Agregar álbum al artista", substring = true))
+
+        // 5) En modo agregar:
+        //    - Debe aparecer el botón "Agregar álbum al artista"
+        //    - Debe aparecer el carrusel con "Buscando América" como seleccionable
+        waitForTextFlexible("Agregar álbum al artista", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
+            .assertIsDisplayed()
+
+        waitForTextFlexible("Buscando América", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Buscando América", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun e2e_addAlbumToMusician_selectAndConfirm() {
+        // 1) Ir a Artistas y abrir detalle de Juan
+        waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
+        waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
+
+        composeTestRule.onNodeWithText("Juan Perez", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        // 2) Esperar encabezado "Álbumes"
+        waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
+
+        // 3) Entrar a modo agregar
+        waitForTextFlexible("Añadir álbum", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Añadir álbum", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        // Hacemos scroll en la lista de detalle hasta encontrar el botón "Agregar álbum al artista"
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Agregar álbum al artista", substring = true))
+
+        // 4) Verificar que el botón grande está visible
+        waitForTextFlexible("Agregar álbum al artista", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
+            .assertIsDisplayed()
+
+        // 5) Hacer scroll hasta el álbum "Buscando América" dentro de la misma lista
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Buscando América", substring = true))
+
+        // 6) Click al primer nodo que contenga "Buscando América"
+        composeTestRule.onAllNodesWithText("Buscando América", substring = true, useUnmergedTree = true)
+            .onFirst()
+            .performClick()
+
+        // 7) Pulsar el botón para agregar de verdad el álbum al artista
+        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        // 8) Verificaciones finales: seguimos en detalle del artista y el álbum se ve
+        waitForTextFlexible("Álbumes", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Álbumes", substring = true)
+            .assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Buscando América", substring = true)
+            .assertIsDisplayed()
+    }
+
+
     private fun waitForTextFlexible(text: String, timeoutMs: Long = 5_000L) {
         try {
             composeTestRule.waitUntil(timeoutMs) {
@@ -166,6 +333,8 @@ class MusicianE2ETest {
             throw AssertionError("Timed out waiting for text '$text' (${e.message})")
         }
     }
+
+
 
     private fun waitAndClickNavItem(label: String, timeoutMs: Long = 5_000L) {
         val candidates = listOf(label, label.replace("A", "Á"), label.replace("Á", "A"), "Artista", "Artistas")
