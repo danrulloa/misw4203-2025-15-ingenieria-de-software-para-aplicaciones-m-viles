@@ -36,7 +36,7 @@ val appModule = module {
 
     // Collectors
     // Bind the concrete network adapter directly
-    single { NetworkServiceAdapterCollectors.create(BuildConfig.BASE_URL) }
+    single { NetworkServiceAdapterCollectors.create(NetworkConfig.baseUrl) }
     // Provide the concrete repository instance
     single { CollectorRepository(get<NetworkServiceAdapterCollectors>()) }
     // Provide ViewModel wired directly to the repository (use-case layer removed)
