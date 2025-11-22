@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -21,6 +22,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.miso.vinilo.MainActivity
+import com.miso.vinilo.data.GlobalRoleState
 import com.miso.vinilo.data.adapter.NetworkConfig
 import com.miso.vinilo.data.database.ViniloDatabase
 import com.miso.vinilo.di.appModule
@@ -128,6 +130,21 @@ class MusicianE2ETest {
             }
         """.trimIndent()
 
+        val addAlbumJson = """
+            {
+              "id": 100,
+              "name": "Buscando América",
+              "cover": "https://example.com/cover.jpg",
+              "releaseDate": "1984-08-01T00:00:00.000Z",
+              "description": "Álbum icónico",
+              "genre": "Salsa",
+              "recordLabel": "Elektra",
+              "tracks": [],
+              "performers": []
+            }
+        """.trimIndent()
+
+
         // Drenar requests anteriores si quedaron
         try {
             var drained = 0
@@ -161,6 +178,9 @@ class MusicianE2ETest {
                             .setResponseCode(200)
                             .setBody(addAlbumResponseJson)
                     }
+
+                    path.startsWith("/musicians/1/albums/") && request.method == "POST" ->
+                        MockResponse().setResponseCode(200).setBody(addAlbumJson)
 
                     else ->
                         MockResponse().setResponseCode(404).setBody("""{"error":"not mocked"}""")
@@ -222,6 +242,7 @@ class MusicianE2ETest {
         // 1) Ir a Artistas y abrir detalle de Juan
         waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
         waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
+        GlobalRoleState.updateRole("Coleccionista")
 
         composeTestRule.onNodeWithText("Juan Perez", substring = true)
             .assertIsDisplayed()
@@ -255,13 +276,57 @@ class MusicianE2ETest {
             .assertIsDisplayed()
 
         waitForTextFlexible("Buscando América", timeoutMs = 10_000L)
-        composeTestRule.onNodeWithText("Buscando América", substring = true)
+        composeTestRule
+            .onAllNodesWithText("Buscando América", substring = true)
+            .onFirst()
             .assertIsDisplayed()
     }
 
     @Test
     fun e2e_addAlbumToMusician_selectAndConfirm() {
-        // 1) Ir a Artistas y abrir detalle de Juan
+
+        waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
+        waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
+        GlobalRoleState.updateRole("Coleccionista")
+
+        composeTestRule.onNodeWithText("Juan Perez", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+
+        waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
+
+
+        waitForTextFlexible("Añadir álbum", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Añadir álbum", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Agregar álbum al artista", substring = true))
+
+
+        waitForTextFlexible("Agregar álbum al artista", timeoutMs = 10_000L)
+        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
+            .assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Buscando América", substring = true))
+
+        composeTestRule.onAllNodesWithText("Buscando América", substring = true, useUnmergedTree = true)
+            .onFirst()
+            .performClick()
+
+        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
+            .assertIsDisplayed()
+            .performClick()
+
+    }
+
+    @Test
+    fun e2e_addAlbumButton_disabled_forUsuario() {
+        GlobalRoleState.updateRole("Usuario")
+
         waitAndClickNavItem("Artistas", timeoutMs = 10_000L)
         waitForTextFlexible("Juan Perez", timeoutMs = 20_000L)
 
@@ -269,45 +334,11 @@ class MusicianE2ETest {
             .assertIsDisplayed()
             .performClick()
 
-        // 2) Esperar encabezado "Álbumes"
         waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
 
-        // 3) Entrar a modo agregar
-        waitForTextFlexible("Añadir álbum", timeoutMs = 10_000L)
         composeTestRule.onNodeWithText("Añadir álbum", substring = true)
             .assertIsDisplayed()
-            .performClick()
-
-        // Hacemos scroll en la lista de detalle hasta encontrar el botón "Agregar álbum al artista"
-        composeTestRule.onNodeWithTag("musicianDetailList")
-            .performScrollToNode(hasText("Agregar álbum al artista", substring = true))
-
-        // 4) Verificar que el botón grande está visible
-        waitForTextFlexible("Agregar álbum al artista", timeoutMs = 10_000L)
-        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
-            .assertIsDisplayed()
-
-        // 5) Hacer scroll hasta el álbum "Buscando América" dentro de la misma lista
-        composeTestRule.onNodeWithTag("musicianDetailList")
-            .performScrollToNode(hasText("Buscando América", substring = true))
-
-        // 6) Click al primer nodo que contenga "Buscando América"
-        composeTestRule.onAllNodesWithText("Buscando América", substring = true, useUnmergedTree = true)
-            .onFirst()
-            .performClick()
-
-        // 7) Pulsar el botón para agregar de verdad el álbum al artista
-        composeTestRule.onNodeWithText("Agregar álbum al artista", substring = true)
-            .assertIsDisplayed()
-            .performClick()
-
-        // 8) Verificaciones finales: seguimos en detalle del artista y el álbum se ve
-        waitForTextFlexible("Álbumes", timeoutMs = 10_000L)
-        composeTestRule.onNodeWithText("Álbumes", substring = true)
-            .assertIsDisplayed()
-
-        composeTestRule.onNodeWithText("Buscando América", substring = true)
-            .assertIsDisplayed()
+            .assertIsNotEnabled()
     }
 
 

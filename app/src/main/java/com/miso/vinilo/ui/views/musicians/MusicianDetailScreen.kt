@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.miso.vinilo.data.GlobalRoleState
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
@@ -86,6 +87,7 @@ fun MusicianDetailScreen(
             var addMode by remember { mutableStateOf(false) }
             var query by rememberSaveable { mutableStateOf("") }
             var selectedAlbumToAdd by rememberSaveable { mutableStateOf<Long?>(null) }
+            val isCollector = GlobalRoleState.selectedRole == "Coleccionista"
 
             Scaffold(
                 modifier = modifier,
@@ -162,13 +164,14 @@ fun MusicianDetailScreen(
 
                             Button(
                                 onClick = {
+                                    if (!isCollector) return@Button
                                     addMode = !addMode
-                                    // si salgo de modo agregar, limpio selección
                                     if (!addMode) {
                                         selectedAlbumToAdd = null
                                         query = ""
                                     }
                                 },
+                                enabled = isCollector,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFF4F3A67),
                                     contentColor = Color.White
