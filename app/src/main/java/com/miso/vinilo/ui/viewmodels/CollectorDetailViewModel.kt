@@ -102,7 +102,7 @@ class CollectorDetailViewModel(
                     _uiState.value = UiState.Success(enrichedCollector)
                 }
                 is NetworkResult.Error -> {
-                    _uiState.value = UiState.Error(collectorResult.message ?: "Unknown error")
+                    _uiState.value = UiState.Error(collectorResult.message ?: "No se pudo cargar el detalle del coleccionista. Por favor, intenta de nuevo.")
                 }
             }
         }
