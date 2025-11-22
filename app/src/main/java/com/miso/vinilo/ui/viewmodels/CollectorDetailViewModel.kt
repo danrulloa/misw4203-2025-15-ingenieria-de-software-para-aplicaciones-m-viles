@@ -67,7 +67,7 @@ class CollectorDetailViewModel(
                     }
 
                     // Enrich collector albums with name and cover
-                    val enrichedAlbums = collector.collectorAlbums?.mapNotNull { collectorAlbum ->
+                    val enrichedAlbums = collector.collectorAlbums?.map { collectorAlbum ->
                         val album = albumMap[collectorAlbum.id]
                         if (album != null) {
                             EnrichedCollectorAlbum(
