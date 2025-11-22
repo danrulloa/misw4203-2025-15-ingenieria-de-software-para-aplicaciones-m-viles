@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.miso.vinilo.data.GlobalRoleState
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.CommentDto
 import com.miso.vinilo.data.dto.TrackDto
@@ -105,6 +107,7 @@ fun AlbumDetailScreen(
 @Composable
 fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
     var showAddCommentForm by remember { mutableStateOf(false) }
+    val selectedRole = GlobalRoleState.selectedRole
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -130,7 +133,7 @@ fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = album.performers?.firstOrNull()?.name?.takeIf { it.isNotBlank() } ?: "Artista desconocido",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = BaseWhite.copy(alpha = 0.8f)
                 )
             }
@@ -153,7 +156,7 @@ fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
             }
         }
 
-        // --- Comments Section ---
+        // --- Comments Section Header (Visible for Everyone) ---
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Row(
@@ -169,7 +172,8 @@ fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
                     fontSize = 22.sp,
                     style = MaterialTheme.typography.headlineSmall
                 )
-                if (!showAddCommentForm) {
+                // --- Conditional Button ---
+                if (selectedRole == "Coleccionista" && !showAddCommentForm) {
                     Button(onClick = { showAddCommentForm = true }) {
                         Text(text = "Agregar Comentario")
                     }
@@ -177,8 +181,8 @@ fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
             }
         }
 
-        // --- Add Comment Form ---
-        if (showAddCommentForm) {
+        // --- Add Comment Form (Only for Collectors) ---
+        if (selectedRole == "Coleccionista" && showAddCommentForm) {
             item {
                 AddCommentForm(
                     albumId = album.id,
@@ -189,14 +193,16 @@ fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
             }
         }
 
-        // --- Comments List (Corrected) ---
+        // --- Comments List (always visible, but content depends on role) ---
         val comments = album.comments
         if (comments.isNullOrEmpty()) {
-            item {
-                Text(
-                    text = "No hay comentarios aún.",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+            if (selectedRole == "Coleccionista") {
+                item {
+                    Text(
+                        text = "No hay comentarios aún.",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
             }
         } else {
             items(comments) { comment ->
@@ -246,10 +252,23 @@ fun CommentItem(comment: CommentDto) {
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = "Collector",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    text = "Coleccionista anónimo",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Calificación: ${comment.rating}",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleSmall
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -303,7 +322,7 @@ fun AddCommentForm(
                 onValueChange = { description = it },
                 label = { Text("Descripción") },
                 modifier = Modifier.fillMaxWidth(),
-                isError = description.isBlank() && description.isNotEmpty()
+                isError = description.isNotEmpty() && description.isBlank()
             )
             Spacer(modifier = Modifier.height(16.dp))
 

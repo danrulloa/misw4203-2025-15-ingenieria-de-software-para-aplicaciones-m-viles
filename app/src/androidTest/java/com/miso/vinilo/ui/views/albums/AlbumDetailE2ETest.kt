@@ -2,7 +2,7 @@ package com.miso.vinilo.ui.views.albums
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onRoot
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.miso.vinilo.MainActivity
 import com.miso.vinilo.data.adapter.NetworkConfig
@@ -25,7 +26,10 @@ import org.junit.runner.RunWith
 class AlbumDetailE2ETest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+
+    @get:Rule
+    val composeTestRule = createEmptyComposeRule()
 
     private lateinit var server: MockWebServer
 
@@ -58,7 +62,7 @@ class AlbumDetailE2ETest {
             "recordLabel": "Elektra"
           }
         ]
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumListJson))
 
         val albumDetailJson = """
@@ -73,7 +77,7 @@ class AlbumDetailE2ETest {
             "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
             "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}]
         }
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailJson))
 
         // Act & Assert
@@ -91,8 +95,9 @@ class AlbumDetailE2ETest {
     }
 
     @Test
-    fun e2e_userAddsCommentToAlbum() {
+    fun e2e_collectorAddsCommentToAlbum_seesComment() {
         // Arrange: Enqueue all responses for this specific test flow
+
         val albumListJson = """
         [
           {
@@ -105,7 +110,7 @@ class AlbumDetailE2ETest {
             "recordLabel": "Elektra"
           }
         ]
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumListJson))
 
         val albumDetailJson = """
@@ -120,41 +125,92 @@ class AlbumDetailE2ETest {
             "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
             "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}]
         }
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailJson))
-
+        
         val postCommentResponse = """
         {"id": 5, "description": "This is a great album!", "rating": 5}
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(201).setBody(postCommentResponse))
 
         val albumDetailWithCommentJson = """
         {
             "id": 100, "name": "Buscando América", "cover": "...",
-            "comments": [{"id":5, "description":"This is a great album!", "rating":5}]
+            "comments": [{"id":5, "description":"This is a great album!", "rating":5, "collector": {"id": 100, "name": "Manolo Bellon"}}]
         }
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailWithCommentJson))
 
         // Act & Assert
-        // 1. Navigate to the Albums tab
+        // 1. Select Collector Role
+        composeTestRule.onNodeWithText("Usuario").performClick()
+        composeTestRule.onNodeWithText("Coleccionista").performClick()
+
+        // 2. Navigate to the Albums tab
+        waitAndClickNavItem("Albumes")
+
+        // 3. Wait for the list item to appear and click it
+        waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
+        composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
+
+        // 4. Scroll to and click on 'Add Comment' button
+        waitForTextFlexible("Agregar Comentario", timeoutMs = 15_000L)
+        composeTestRule.onNodeWithText("Agregar Comentario").performClick()
+
+        // 5. Fill and submit the form
+        composeTestRule.onNodeWithText("Calificación (1-5)").performTextInput("5")
+        composeTestRule.onNodeWithText("Descripción").performTextInput("This is a great album!")
+        composeTestRule.onNodeWithText("Guardar").performClick()
+
+        // 6. Verify the new comment is displayed
+        waitForTextFlexible("This is a great album!", timeoutMs = 5_000L)
+    }
+    
+    @Test
+    fun e2e_userViewsAlbumDetail_addCommentButtonIsNotVisible() {
+        // Arrange: Enqueue responses for navigation
+
+        val albumListJson = """
+        [
+          {
+            "id": 100,
+            "name": "Buscando América",
+            "cover": "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+            "releaseDate": "1984-08-01T00:00:00.000Z",
+            "description": "...",
+            "genre": "Salsa",
+            "recordLabel": "Elektra"
+          }
+        ]
+        """
+        server.enqueue(MockResponse().setResponseCode(200).setBody(albumListJson))
+
+        val albumDetailJson = """
+        {
+            "id": 100,
+            "name": "Buscando América",
+            "cover": "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+            "releaseDate": "1984-08-01T00:00:00.000Z",
+            "description": "...",
+            "genre": "Salsa",
+            "recordLabel": "Elektra",
+            "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
+            "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}]
+        }
+        """
+        server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailJson))
+
+        // Act: Role is "Usuario" by default, no selection needed.
+        // 1. Navigate to Albums tab
         waitAndClickNavItem("Albumes")
 
         // 2. Wait for the list item to appear and click it
         waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
-        // 3. Scroll to and click on 'Add Comment' button
-        waitForTextFlexible("Agregar Comentario", timeoutMs = 15_000L)
-        composeTestRule.onNodeWithText("Agregar Comentario").performClick()
-
-        // 4. Fill and submit the form
-        composeTestRule.onNodeWithText("Calificación (1-5)").performTextInput("5")
-        composeTestRule.onNodeWithText("Descripción").performTextInput("This is a great album!")
-        composeTestRule.onNodeWithText("Guardar").performClick()
-
-        // 5. Verify the new comment is displayed
-        waitForTextFlexible("This is a great album!", timeoutMs = 5_000L)
+        // Assert: Verify the button does not exist
+        waitForTextFlexible("Comentarios", timeoutMs = 5_000L) // Wait for screen to load
+        composeTestRule.onNodeWithText("Agregar Comentario").assertDoesNotExist()
     }
 
     // Helper functions copied from AlbumE2ETest
