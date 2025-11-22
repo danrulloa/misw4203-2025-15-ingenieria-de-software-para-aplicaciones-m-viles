@@ -143,7 +143,8 @@ class MusicianViewModelTest {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList(),
             )
         )
 

@@ -4,8 +4,10 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.miso.vinilo.data.adapter.NetworkConfig
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.CommentDto
 import com.miso.vinilo.data.repository.AlbumRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,7 +37,7 @@ class AlbumViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        mockRepo = mockk<AlbumRepository>()
+        mockRepo = mockk<AlbumRepository>(relaxed = true)
         viewModel = AlbumViewModel(mockRepo)
     }
 
@@ -47,7 +49,7 @@ class AlbumViewModelTest {
     @Test
     fun `loadAlbum updates state to Success when repository returns success`() = runTest {
         val albumId = 100L
-        val expectedAlbum = AlbumDto(albumId, "Test Album", "", "", "", "", "", null, null)
+        val expectedAlbum = AlbumDto(albumId, "Test Album", "", "", "", "", "", null, null, null)
         coEvery { mockRepo.getAlbum(albumId) } returns NetworkResult.Success(expectedAlbum)
 
         viewModel.loadAlbum(albumId)
@@ -73,8 +75,66 @@ class AlbumViewModelTest {
     }
 
     @Test
+    fun `postComment updates state to Success when repository call is successful`() = runTest {
+        // Arrange
+        val albumId = 100L
+        val rating = 5
+        val description = "Awesome album!"
+        val expectedComment = CommentDto(id = 1, description = description, rating = rating)
+        coEvery { mockRepo.postComment(eq(albumId), any()) } returns NetworkResult.Success(expectedComment)
+
+        // Act
+        viewModel.postComment(albumId, rating, description)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.postCommentState.value
+        assertTrue(state is AlbumViewModel.PostCommentUiState.Success)
+        assertEquals(expectedComment, (state as AlbumViewModel.PostCommentUiState.Success).data)
+        coVerify { mockRepo.postComment(eq(albumId), any()) }
+        coVerify { mockRepo.getAlbum(eq(albumId)) } // Verify that the album details are reloaded
+    }
+
+    @Test
+    fun `postComment updates state to Error when repository call fails`() = runTest {
+        // Arrange
+        val albumId = 100L
+        val rating = 5
+        val description = "Awesome album!"
+        val errorMessage = "Could not post comment"
+        coEvery { mockRepo.postComment(eq(albumId), any()) } returns NetworkResult.Error(errorMessage)
+
+        // Act
+        viewModel.postComment(albumId, rating, description)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.postCommentState.value
+        assertTrue(state is AlbumViewModel.PostCommentUiState.Error)
+        assertEquals(errorMessage, (state as AlbumViewModel.PostCommentUiState.Error).message)
+        coVerify { mockRepo.postComment(eq(albumId), any()) }
+    }
+
+    @Test
+    fun `resetPostCommentState should set state back to Idle`() = runTest {
+        // Arrange: First set a non-idle state
+        coEvery { mockRepo.postComment(any(), any()) } returns NetworkResult.Success(mockk())
+        viewModel.postComment(100L, 5, "Test")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.postCommentState.value is AlbumViewModel.PostCommentUiState.Success)
+
+        // Act
+        viewModel.resetPostCommentState()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.postCommentState.value
+        assertTrue(state is AlbumViewModel.PostCommentUiState.Idle)
+    }
+
+    @Test
     fun `loadAlbums updates state to Success when repository returns success`() = runTest {
-        val expectedAlbums = listOf(AlbumDto(100L, "Test Album", "", "", "", "", "", null, null))
+        val expectedAlbums = listOf(AlbumDto(100L, "Test Album", "", "", "", "", "", null, null, null))
         coEvery { mockRepo.getAlbums() } returns NetworkResult.Success(expectedAlbums)
 
         viewModel.loadAlbums()

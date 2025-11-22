@@ -4,11 +4,18 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.miso.vinilo.data.dto.AlbumDto
-import com.miso.vinilo.data.adapter.NetworkResult
-import com.miso.vinilo.data.repository.AlbumRepository
 import com.miso.vinilo.data.adapter.NetworkConfig
+import com.miso.vinilo.data.adapter.NetworkResult
+import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.CollectorIdDto
+import com.miso.vinilo.data.dto.CommentDto
+import com.miso.vinilo.data.dto.NewCommentDto
+import com.miso.vinilo.data.repository.AlbumRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+private const val TAG = "vinilo"
 
 /**
  * ViewModel that exposes album list state to the UI.
@@ -24,7 +31,8 @@ class AlbumViewModel(
     private val _albumDetailState = MutableLiveData<AlbumDetailUiState>(AlbumDetailUiState.Idle)
     val albumDetailState: LiveData<AlbumDetailUiState> = _albumDetailState
 
-    // Removed eager fetch from init: the UI should explicitly request data.
+    private val _postCommentState = MutableStateFlow<PostCommentUiState>(PostCommentUiState.Idle)
+    val postCommentState = _postCommentState.asStateFlow()
 
     /**
      * Triggers a network load of albums and updates `state` accordingly.
@@ -50,6 +58,31 @@ class AlbumViewModel(
         }
     }
 
+    fun postComment(albumId: Long, rating: Int, description: String) {
+        // For now, we'll use a hardcoded collector ID as there's no login system.
+        val collectorId = 100L
+        val newComment = NewCommentDto(
+            rating = rating,
+            description = description,
+            collector = CollectorIdDto(collectorId)
+        )
+        viewModelScope.launch {
+            _postCommentState.value = PostCommentUiState.Loading
+            when (val result = repository.postComment(albumId, newComment)) {
+                is NetworkResult.Success -> {
+                    _postCommentState.value = PostCommentUiState.Success(result.data)
+                    // To refresh the album details with the new comment, we can reload the album
+                    loadAlbum(albumId)
+                }
+                is NetworkResult.Error -> _postCommentState.value = PostCommentUiState.Error(result.message)
+            }
+        }
+    }
+
+    fun resetPostCommentState() {
+        _postCommentState.value = PostCommentUiState.Idle
+    }
+
     /**
      * UI-friendly sealed class representing Idle/Loading/Success/Error states.
      */
@@ -65,6 +98,13 @@ class AlbumViewModel(
         object Loading : AlbumDetailUiState()
         data class Success(val data: AlbumDto) : AlbumDetailUiState()
         data class Error(val message: String) : AlbumDetailUiState()
+    }
+
+    sealed class PostCommentUiState {
+        object Idle : PostCommentUiState()
+        object Loading : PostCommentUiState()
+        data class Success(val data: CommentDto) : PostCommentUiState()
+        data class Error(val message: String) : PostCommentUiState()
     }
 
     /**

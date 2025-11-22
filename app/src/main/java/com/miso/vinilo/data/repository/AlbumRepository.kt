@@ -3,6 +3,8 @@ package com.miso.vinilo.data.repository
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterAlbums
 import com.miso.vinilo.data.dto.AlbumDto
+import com.miso.vinilo.data.dto.CommentDto
+import com.miso.vinilo.data.dto.NewCommentDto
 
 /**
  * Concrete repository that exposes album-related data operations and delegates to a network adapter.
@@ -18,6 +20,10 @@ class AlbumRepository(
 
     suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
         return serviceAdapter.getAlbum(id)
+    }
+
+    suspend fun postComment(albumId: Long, comment: NewCommentDto): NetworkResult<CommentDto> {
+        return serviceAdapter.postComment(albumId, comment)
     }
 
     companion object {

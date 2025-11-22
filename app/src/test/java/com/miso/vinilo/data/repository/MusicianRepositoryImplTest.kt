@@ -140,7 +140,8 @@ class MusicianRepositoryImplTest {
             genre = "Rock",
             recordLabel = "EMI",
             tracks = emptyList(),
-            performers = emptyList()
+            performers = emptyList(),
+            comments = emptyList()
         )
 
         coEvery { adapter.addAlbumToMusician(100L, 102L) } returns NetworkResult.Success(albumDto)
