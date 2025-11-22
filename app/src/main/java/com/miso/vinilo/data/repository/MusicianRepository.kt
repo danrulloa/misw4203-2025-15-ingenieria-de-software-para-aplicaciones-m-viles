@@ -84,6 +84,13 @@ class MusicianRepository(
         return serviceAdapter.getMusician(id)
     }
 
+    /**
+     * Get all musicians from network (used for matching performer images).
+     */
+    suspend fun getMusicians(): NetworkResult<List<MusicianDto>> {
+        return serviceAdapter.getMusicians()
+    }
+
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.

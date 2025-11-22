@@ -3,7 +3,6 @@ package com.miso.vinilo.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.miso.vinilo.data.adapter.NetworkResult
-import com.miso.vinilo.data.dto.CollectorDto
 import com.miso.vinilo.data.dto.PerformerDto
 import com.miso.vinilo.data.repository.CollectorRepository
 import com.miso.vinilo.data.repository.AlbumRepository
@@ -119,15 +118,29 @@ class CollectorDetailViewModel(
             return performers
         }
 
-        // Fetch musician details for performers with missing images
+        // Get all musicians to match by name
+        val musiciansResult = musicianRepository.getMusicians()
+        val musicians = when (musiciansResult) {
+            is NetworkResult.Success -> musiciansResult.data
+            is NetworkResult.Error -> return performers // Can't enrich without musicians data
+        }
+
+        // Match performers with musicians by name
         return performers.map { performer ->
             if (performer.image.isBlank()) {
-                // Try to get image from musician endpoint
-                when (val result = musicianRepository.getMusician(performer.id)) {
-                    is NetworkResult.Success -> {
-                        performer.copy(image = result.data.image ?: "")
-                    }
-                    is NetworkResult.Error -> performer
+                // Find musician by name matching (use first two words for more tolerance)
+                val matchedMusician = musicians.find { musician ->
+                    val performerWords = performer.name.lowercase().split(" ").take(2)
+                    val musicianWords = musician.name.lowercase().split(" ").take(2)
+                    performerWords == musicianWords ||
+                    performer.name.lowercase().contains(musician.name.lowercase()) ||
+                    musician.name.lowercase().contains(performer.name.lowercase())
+                }
+
+                if (matchedMusician != null && !matchedMusician.image.isNullOrBlank()) {
+                    performer.copy(image = matchedMusician.image)
+                } else {
+                    performer
                 }
             } else {
                 performer
