@@ -10,7 +10,6 @@ import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.database.dao.MusicianDao
 import com.miso.vinilo.data.database.entities.MusicianEntity
 import com.miso.vinilo.data.dto.AlbumDto
-import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
