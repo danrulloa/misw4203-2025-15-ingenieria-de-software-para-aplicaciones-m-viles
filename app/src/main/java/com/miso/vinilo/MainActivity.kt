@@ -217,12 +217,11 @@ fun CollectorScreenHost(modifier: Modifier = Modifier) {
             selectedCollectorId?.let { detailVm.getCollectorDetail(it) }
         }
 
-        com.miso.vinilo.ui.views.collectors.CollectorDetailScreen(
+        CollectorDetailScreen(
             state = detailState,
             onBackClick = { selectedCollectorId = null },
             modifier = modifier
         )
-//        Text("Detail Screen Placeholder")
     }
 }
 
