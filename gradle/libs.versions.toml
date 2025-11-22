@@ -21,7 +21,6 @@ foundation = "1.9.4"
 room = "2.6.1"
 paging = "3.3.0"
 paging-compose = "3.3.0"
-compiler = "3.2.0-alpha11"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,7 +58,6 @@ androidx-room-paging = { group = "androidx.room", name = "room-paging", version.
 # Paging3 libs
 androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "paging" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging-compose" }
-androidx-compiler = { group = "androidx.databinding", name = "compiler", version.ref = "compiler" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

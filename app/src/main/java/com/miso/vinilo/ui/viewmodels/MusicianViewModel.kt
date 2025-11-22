@@ -84,6 +84,55 @@ class MusicianViewModel(
         }
     }
 
+    /**
+     * Adds an album to the given [musicianId].
+     * Runs inside [viewModelScope] so the coroutine is cancelled
+     * automatically when the ViewModel is cleared.
+     */
+    fun addAlbumToMusician(musicianId: Long, albumId: Long) {
+        viewModelScope.launch {
+            val current = _detailState.value
+
+            when (val result = repository.addAlbumToMusician(musicianId, albumId)) {
+                is NetworkResult.Success -> {
+                    val newAlbumDto = result.data
+
+                    val prevSuccess = current as? DetailUiState.Success
+                    if (prevSuccess != null) {
+                        val prevData = prevSuccess.data
+
+                        val newAlbumUi = AlbumUi(
+                            id = newAlbumDto.id,
+                            name = newAlbumDto.name,
+                            cover = newAlbumDto.cover,
+                            year = newAlbumDto.releaseDate?.take(4) ?: "—"
+                        )
+
+                        val alreadyExists = prevData.albums.any { it.id == newAlbumUi.id }
+                        val updatedAlbums = if (alreadyExists) {
+                            prevData.albums
+                        } else {
+                            prevData.albums + newAlbumUi
+                        }
+
+                        _detailState.value = DetailUiState.Success(
+                            prevData.copy(albums = updatedAlbums)
+                        )
+                    } else {
+                        // Fallback: reload detail from backend
+                        loadMusician(musicianId)
+                    }
+                }
+
+                is NetworkResult.Error -> {
+                    _detailState.value = DetailUiState.Error(
+                        result.message ?: "Error al agregar álbum al artista"
+                    )
+                }
+            }
+        }
+    }
+
 
 
     /**

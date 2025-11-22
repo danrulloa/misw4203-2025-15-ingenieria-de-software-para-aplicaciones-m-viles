@@ -20,6 +20,7 @@ import com.miso.vinilo.ui.theme.ViniloTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import com.miso.vinilo.data.GlobalRoleState
 
 private val LogoSize = 200.dp
 
@@ -83,17 +84,20 @@ private fun SpacerSmall() {
 @Composable
 private fun RoleDropdown() {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    var selectedRole by rememberSaveable { mutableStateOf("Usuario") }
-    // FocusRequester must be attached to the text field so ExposedDropdownMenuBox can request focus
     val focusRequester = remember { FocusRequester() }
+
+    // Leemos el valor global (esto ya es observable para Compose)
+    val selectedRole = GlobalRoleState.selectedRole
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded }
     ) {
-        // El TextField puede consumir clicks; envolverlo en un Box clickable garantiza
-        // que tocar el área togglee `expanded` y abra el menú.
-        Box(modifier = Modifier.width(LogoSize).clickable { expanded = !expanded }) {
+        Box(
+            modifier = Modifier
+                .width(LogoSize)
+                .clickable { expanded = !expanded }
+        ) {
             OutlinedTextField(
                 value = selectedRole,
                 onValueChange = {},
@@ -114,14 +118,20 @@ private fun RoleDropdown() {
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            DropdownMenuItem(text = { Text("Usuario") }, onClick = {
-                selectedRole = "Usuario"
-                expanded = false
-            })
-            DropdownMenuItem(text = { Text("Coleccionista") }, onClick = {
-                selectedRole = "Coleccionista"
-                expanded = false
-            })
+            DropdownMenuItem(
+                text = { Text("Usuario") },
+                onClick = {
+                    GlobalRoleState.selectedRole = "Usuario"
+                    expanded = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Coleccionista") },
+                onClick = {
+                    GlobalRoleState.selectedRole = "Coleccionista"
+                    expanded = false
+                }
+            )
         }
     }
 }
