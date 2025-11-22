@@ -139,17 +139,11 @@ dependencies {
     testImplementation("junit:junit:4.12")
     androidTestImplementation("com.android.support.test:runner:1.0.1")
     androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1")
+    
     // Core library desugaring to support java.time on older Android versions
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
-
-    // Conscrypt to provide an up-to-date TLS provider / truststore on older Android versions
-    implementation("org.conscrypt:conscrypt-android:2.5.2")
-
-    // Google Play Services Base (contains ProviderInstaller)
-    implementation("com.google.android.gms:play-services-base:18.2.0")
 }
 
-// Jacoco Configuration
 jacoco {
     toolVersion = "0.8.10"
 }
@@ -160,11 +154,11 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     reports { xml.required.set(true); html.required.set(true); csv.required.set(false) }
 
     val fileFilter = listOf("**/R.class","**/R$*.class","**/BuildConfig.*","**/Manifest*.*","**/*Test*.*","android/**/*.*","**/*$*")
-    val ktDebug = fileTree("$buildDir/tmp/kotlin-classes/debug") { exclude(fileFilter) }
-    val javaDebug = fileTree("$buildDir/intermediates/javac/debug/classes") { exclude(fileFilter) }
+    val ktDebug = fileTree("${layout.buildDirectory.get().asFile}/tmp/kotlin-classes/debug") { exclude(fileFilter) }
+    val javaDebug = fileTree("${layout.buildDirectory.get().asFile}/intermediates/javac/debug/classes") { exclude(fileFilter) }
     classDirectories.setFrom(files(ktDebug, javaDebug))
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
-    executionData.setFrom(fileTree(buildDir) {
+    executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
         include("jacoco/testDebugUnitTest.exec", "outputs/unit_test_code_coverage/**/testDebugUnitTest.exec")
     })
 }
