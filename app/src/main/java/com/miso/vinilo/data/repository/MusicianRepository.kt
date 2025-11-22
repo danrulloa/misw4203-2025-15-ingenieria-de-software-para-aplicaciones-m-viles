@@ -97,6 +97,12 @@ class MusicianRepository(
     ): NetworkResult<AlbumDto>{
         return serviceAdapter.addAlbumToMusician(musicianId,albumId)
     }
+    /**
+     * Retrieves all musicians from the network.
+     */
+    suspend fun getMusicians(): NetworkResult<List<MusicianDto>> {
+        return serviceAdapter.getMusicians()
+    }
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.

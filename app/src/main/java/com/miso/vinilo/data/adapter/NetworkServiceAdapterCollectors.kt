@@ -37,6 +37,23 @@ class NetworkServiceAdapterCollectors(
         }
     }
 
+    /**
+     * Fetches the details of a specific collector from the network API.
+     * Executes the call on the injected IO dispatcher.
+     * @param id The ID of the collector to fetch.
+     * @return A [NetworkResult] containing the [CollectorDto] on success or an [Error].
+     */
+    suspend fun getCollectorDetail(id: Long): NetworkResult<CollectorDto> {
+        return try {
+            val dto: CollectorDto = withContext(ioDispatcher) {
+                api.getCollectorDetail(id)
+            }
+            NetworkResult.Success(dto)
+        } catch (e: Exception) {
+            NetworkResult.Error("Unknown network error", e)
+        }
+    }
+
     companion object {
         /**
          * Creates an instance of [NetworkServiceAdapterCollectors].
