@@ -222,7 +222,6 @@ fun CollectorScreenHost(modifier: Modifier = Modifier) {
             onBackClick = { selectedCollectorId = null },
             modifier = modifier
         )
-//        Text("Detail Screen Placeholder")
     }
 }
 
