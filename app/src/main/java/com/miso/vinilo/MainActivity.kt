@@ -22,15 +22,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.MusicianDto
+import com.miso.vinilo.ui.factories.AlbumViewModelFactory
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
@@ -101,9 +104,11 @@ fun ViniloApp() {
 
 @Composable
 fun AlbumScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: AlbumViewModel = viewModel()
+    val context = LocalContext.current
+    val vm: AlbumViewModel = viewModel(
+        factory = remember { AlbumViewModelFactory(context) }
+    )
+
     var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     if (selectedAlbumId == null) {

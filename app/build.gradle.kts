@@ -66,6 +66,10 @@ android {
         buildConfig = true
     }
 }
+configurations.all {
+    exclude(group = "com.google.guava", module = "listenablefuture")
+}
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -81,6 +85,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
