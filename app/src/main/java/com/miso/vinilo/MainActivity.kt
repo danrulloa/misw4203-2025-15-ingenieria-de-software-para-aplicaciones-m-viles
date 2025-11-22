@@ -44,6 +44,8 @@ import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
 import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+import androidx.compose.runtime.collectAsState
+import com.miso.vinilo.ui.views.collectors.CollectorDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -186,19 +188,42 @@ fun CollectorScreenHost(modifier: Modifier = Modifier) {
     // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
     // creates its own repository from BuildConfig, so a factory is no longer necessary.
     val vm: CollectorViewModel = viewModel()
+    // Get ViewModel for detail from Koin
+    val detailVm: com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel = org.koin.androidx.compose.koinViewModel()
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
+    var selectedCollectorId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
-    LaunchedEffect(Unit) {
-        if (state is CollectorViewModel.UiState.Idle) {
-            vm.loadCollectors()
+    if (selectedCollectorId == null) {
+        // Observe LiveData state so the UI recomposes on updates.
+        val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
+
+        // Trigger loading only when the composable enters composition and the VM is idle.
+        LaunchedEffect(Unit) {
+            if (state is CollectorViewModel.UiState.Idle) {
+                vm.loadCollectors()
+            }
         }
-    }
 
-    // Pass the current state to the screen composable.
-    CollectorsScreen(state = state, modifier = modifier)
+        // Pass the current state to the screen composable.
+        CollectorsScreen(
+            state = state,
+            modifier = modifier,
+            onCollectorClick = { id -> selectedCollectorId = id }
+        )
+    } else {
+        val detailState by detailVm.uiState.collectAsState()
+
+        LaunchedEffect(selectedCollectorId) {
+            selectedCollectorId?.let { detailVm.getCollectorDetail(it) }
+        }
+
+        com.miso.vinilo.ui.views.collectors.CollectorDetailScreen(
+            state = detailState,
+            onBackClick = { selectedCollectorId = null },
+            modifier = modifier
+        )
+//        Text("Detail Screen Placeholder")
+    }
 }
 
 enum class AppDestinations(
