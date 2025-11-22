@@ -86,6 +86,12 @@ class MusicianRepository(
         return serviceAdapter.getMusician(id)
     }
 
+    /**
+     * Associates an album with a musician via the network API.
+     * @param musicianId The ID of the musician
+     * @param albumId The ID of the album to associate
+     * @return NetworkResult wrapping the updated AlbumDto on success, or an error
+     */
     suspend fun addAlbumToMusician(
         musicianId: Long,
         albumId: Long

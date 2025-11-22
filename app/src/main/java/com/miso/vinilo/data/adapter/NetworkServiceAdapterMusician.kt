@@ -73,7 +73,7 @@ class NetworkServiceAdapterMusicians(
         albumId: Long
     ): NetworkResult<AlbumDto> {
         return try {
-            val dto : AlbumDto = withContext(ioDispatcher) {
+            val dto = withContext(ioDispatcher) {
                 api.addAlbumToMusician(musicianId, albumId)
             }
             NetworkResult.Success(dto)
