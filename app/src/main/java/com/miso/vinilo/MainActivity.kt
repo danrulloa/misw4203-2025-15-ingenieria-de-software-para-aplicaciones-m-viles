@@ -135,16 +135,36 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Get ViewModel from Koin DI for musicians, keep AlbumViewModel from the default factory
     val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
     val albumVm: AlbumViewModel = viewModel()
 
     var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
     var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
+    // estado de catálago de álbumes
+    val albumsState by albumVm.state.observeAsState(AlbumViewModel.UiState.Idle)
+
+    LaunchedEffect(Unit) {
+        if (albumsState is AlbumViewModel.UiState.Idle) {
+            albumVm.loadAlbums()
+        }
+    }
+
+    val selectableAlbums: List<MusicianViewModel.AlbumUi> =
+        (albumsState as? AlbumViewModel.UiState.Success)
+            ?.data
+            ?.map { dto ->
+                MusicianViewModel.AlbumUi(
+                    id = dto.id,
+                    name = dto.name,
+                    cover = dto.cover,
+                    year = dto.releaseDate?.take(4) ?: "—"
+                )
+            }
+            ?: emptyList()
+
     when {
         selectedAlbumId != null -> {
-            // 💿 Detalle de álbum (reutilizamos tu pantalla existente)
             AlbumDetailScreen(
                 albumId = selectedAlbumId!!,
                 viewModel = albumVm,
@@ -153,9 +173,6 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
         }
 
         selectedMusicianId == null -> {
-            // Lista de músicos
-            // Pasamos el ViewModel directo al composable; este consume Flow<PagingData> y
-            // controla su propio refresco (pull-to-refresh) a través de viewModel.refreshMusicians().
             MusicianScreen(
                 viewModel = musicianVm,
                 modifier = modifier,
@@ -174,14 +191,20 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
             MusicianDetailScreen(
                 state = detailState,
                 onBackClick = { selectedMusicianId = null },
-                onAlbumClick = { albumId ->
-                    selectedAlbumId = albumId
+                onAlbumClick = { albumId -> selectedAlbumId = albumId },
+                onAddAlbumConfirm = { albumId ->
+                    selectedMusicianId?.let { musicianId ->
+                        musicianVm.addAlbumToMusician(musicianId, albumId)
+                    }
                 },
+                selectableAlbums = selectableAlbums,
                 modifier = modifier
             )
         }
     }
 }
+
+
 
 @Composable
 fun CollectorScreenHost(modifier: Modifier = Modifier) {
