@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,7 +82,15 @@ fun ViniloApp() {
                         )
                     },
                     // Force the label to use the app typography so we know it's using Montserrat
-                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), letterSpacing = (-1.2).sp) },
+                    // Add explicit semantics for E2E tests
+                    label = { 
+                        Text(
+                            it.label, 
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), 
+                            letterSpacing = (-1.2).sp,
+                            modifier = Modifier.semantics { contentDescription = it.label }
+                        ) 
+                    },
                     selected = it == currentDestination,
                     onClick = { currentDestination = it }
                 )

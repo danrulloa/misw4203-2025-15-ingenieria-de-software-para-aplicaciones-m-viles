@@ -2,10 +2,14 @@ package com.miso.vinilo.ui.views.albums
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
@@ -209,6 +213,9 @@ class AlbumDetailE2ETest {
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
         // Assert: Verify the button does not exist
+        // Scroll to "Comentarios" to ensure it's visible (needed for small screens)
+        composeTestRule.onNodeWithTag("album_detail_list").performScrollToNode(hasText("Comentarios"))
+        
         waitForTextFlexible("Comentarios", timeoutMs = 5_000L) // Wait for screen to load
         composeTestRule.onNodeWithText("Agregar Comentario").assertDoesNotExist()
     }
