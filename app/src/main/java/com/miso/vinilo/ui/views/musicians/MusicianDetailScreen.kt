@@ -81,7 +81,6 @@ fun MusicianDetailScreen(
             val musician = data.musician
             val albums = data.albums
 
-            // --- estado para modo agregar y selección ---
             var addMode by remember { mutableStateOf(false) }
             var query by rememberSaveable { mutableStateOf("") }
             var selectedAlbumToAdd by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -117,7 +116,6 @@ fun MusicianDetailScreen(
                         .testTag("musicianDetailList"),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Imagen del artista
                     item {
                         BoxWithConstraints {
                             val screenWidth = maxWidth
@@ -138,7 +136,6 @@ fun MusicianDetailScreen(
                         }
                     }
 
-                    // Nombre
                     item {
                         Text(
                             text = musician.name,
@@ -147,7 +144,6 @@ fun MusicianDetailScreen(
                         )
                     }
 
-                    // Header "Álbumes" + botón Agregar
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -194,15 +190,10 @@ fun MusicianDetailScreen(
                         }
                     }
 
-                    // ================== MODO AGREGAR ÁLBUM ==================
                     if (addMode) {
-                        // 1) Fuente de datos: TODOS los álbumes seleccionables
                         val sourceAlbums = selectableAlbums.ifEmpty {
-                            // fallback por si aún no tienes el catálogo completo:
                             albums
                         }
-
-                        // 2) Barra de búsqueda
                         item {
                             OutlinedTextField(
                                 value = query,
@@ -229,14 +220,12 @@ fun MusicianDetailScreen(
                             )
                         }
 
-                        // 3) Filtro sobre TODOS los álbumes
                         val filtered = if (query.isBlank()) {
                             sourceAlbums
                         } else {
                             sourceAlbums.filter { it.name.contains(query, ignoreCase = true) }
                         }
 
-                        // 4) Carrusel con selección visual
                         item {
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(filtered, key = { it.id }) { album ->
@@ -248,7 +237,7 @@ fun MusicianDetailScreen(
                                             .clip(RoundedCornerShape(16.dp))
                                             .background(
                                                 if (isSelected)
-                                                    Color(0x334F3A67)   // sombreado cuando está seleccionado
+                                                    Color(0x334F3A67)
                                                 else
                                                     Color.Transparent
                                             )
@@ -301,7 +290,6 @@ fun MusicianDetailScreen(
                             }
                         }
 
-                        // 5) Botón de confirmación (igual que antes)
                         item {
                             Spacer(Modifier.height(12.dp))
                             Button(
@@ -333,7 +321,6 @@ fun MusicianDetailScreen(
                         }
                     }
 
-                    // ================== CARRUSEL NORMAL DEL ARTISTA ==================
                     if (albums.isNotEmpty()) {
                         item {
                             LazyRow(

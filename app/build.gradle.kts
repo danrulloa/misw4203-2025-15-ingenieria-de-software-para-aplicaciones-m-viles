@@ -67,6 +67,8 @@ android {
     }
 }
 
+
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -147,6 +149,7 @@ dependencies {
 
     // Google Play Services Base (contains ProviderInstaller)
     implementation("com.google.android.gms:play-services-base:18.2.0")
+    ksp("com.google.guava:guava:31.1-jre")
 }
 
 // Jacoco Configuration
