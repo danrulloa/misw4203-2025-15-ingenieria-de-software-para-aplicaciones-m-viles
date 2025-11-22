@@ -80,7 +80,7 @@ fun ViniloApp() {
                         )
                     },
                     // Force the label to use the app typography so we know it's using Montserrat
-                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall, letterSpacing = (-0.9).sp) },
+                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), letterSpacing = (-1.2).sp) },
                     selected = it == currentDestination,
                     onClick = { currentDestination = it }
                 )
