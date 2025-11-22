@@ -288,7 +288,8 @@ fun AlbumScreenPreview() {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             ),
             AlbumDto(
                 id = 101,
@@ -299,7 +300,8 @@ fun AlbumScreenPreview() {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             ),
             AlbumDto(
                 id = 102,
@@ -310,7 +312,8 @@ fun AlbumScreenPreview() {
                 genre = "Rock",
                 recordLabel = "EMI",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             )
         )
 

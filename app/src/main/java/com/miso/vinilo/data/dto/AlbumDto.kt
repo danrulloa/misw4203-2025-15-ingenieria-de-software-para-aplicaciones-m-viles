@@ -12,5 +12,6 @@ data class AlbumDto(
     val genre: String,
     val recordLabel: String,
     val tracks: List<TrackDto>?,
-    val performers: List<PerformerDto>?
+    val performers: List<PerformerDto>?,
+    val comments: List<CommentDto>? // Added back for the new feature
 )
