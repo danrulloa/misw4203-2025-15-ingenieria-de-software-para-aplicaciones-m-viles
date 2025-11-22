@@ -66,9 +66,7 @@ android {
         buildConfig = true
     }
 }
-configurations.all {
-    exclude(group = "com.google.guava", module = "listenablefuture")
-}
+
 
 
 dependencies {
@@ -85,7 +83,6 @@ dependencies {
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -152,6 +149,7 @@ dependencies {
 
     // Google Play Services Base (contains ProviderInstaller)
     implementation("com.google.android.gms:play-services-base:18.2.0")
+    ksp("com.google.guava:guava:31.1-jre")
 }
 
 // Jacoco Configuration
