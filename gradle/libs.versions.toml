@@ -19,8 +19,8 @@ foundation = "1.9.4"
 
 # Room and Paging
 room = "2.6.1"
-paging = "3.3.0"
-paging-compose = "3.3.0"
+paging = "3.3.6"
+paging-compose = "3.3.6"
 pagingCommon = "3.3.6"
 
 [libraries]
