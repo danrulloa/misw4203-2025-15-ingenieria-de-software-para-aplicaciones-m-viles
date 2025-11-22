@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -109,7 +110,7 @@ fun AlbumDetailContent(album: AlbumDto, viewModel: AlbumViewModel) {
     var showAddCommentForm by remember { mutableStateOf(false) }
     val selectedRole = GlobalRoleState.selectedRole
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(modifier = Modifier.fillMaxSize().testTag("album_detail_list")) {
         item {
             AsyncImage(
                 model = album.cover,

@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,6 +31,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -48,7 +51,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(200.dp))
+        Spacer(modifier = Modifier.weight(1f).fillMaxWidth().heightIn(min = 32.dp))
 
         Box(modifier = Modifier
             .size(LogoSize)
@@ -71,6 +74,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         // Mostrar solo el dropdown centrado y con el mismo ancho que el logo
         RoleDropdown()
+        
+        Spacer(modifier = Modifier.weight(1f).fillMaxWidth().heightIn(min = 32.dp))
     }
 }
 
