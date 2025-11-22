@@ -38,10 +38,13 @@ import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
 import com.miso.vinilo.ui.views.musicians.MusicianScreen
+import com.miso.vinilo.ui.views.musicians.MusicianListContent
 import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,23 +133,76 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: MusicianViewModel = viewModel()
+    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
+    val albumVm: AlbumViewModel = viewModel()
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(MusicianViewModel.UiState.Idle)
+    var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
+    // estado de catálago de álbumes
+    val albumsState by albumVm.state.observeAsState(AlbumViewModel.UiState.Idle)
+
     LaunchedEffect(Unit) {
-        if (state is MusicianViewModel.UiState.Idle) {
-            vm.loadMusicians()
+        if (albumsState is AlbumViewModel.UiState.Idle) {
+            albumVm.loadAlbums()
         }
     }
 
-    // Pass the current state to the screen composable.
-    MusicianScreen(state = state, modifier = modifier)
+    val selectableAlbums: List<MusicianViewModel.AlbumUi> =
+        (albumsState as? AlbumViewModel.UiState.Success)
+            ?.data
+            ?.map { dto ->
+                MusicianViewModel.AlbumUi(
+                    id = dto.id,
+                    name = dto.name,
+                    cover = dto.cover,
+                    year = dto.releaseDate?.take(4) ?: "—"
+                )
+            }
+            ?: emptyList()
+
+    when {
+        selectedAlbumId != null -> {
+            AlbumDetailScreen(
+                albumId = selectedAlbumId!!,
+                viewModel = albumVm,
+                onBackClick = { selectedAlbumId = null }
+            )
+        }
+
+        selectedMusicianId == null -> {
+            MusicianScreen(
+                viewModel = musicianVm,
+                modifier = modifier,
+                onMusicianClick = { id -> selectedMusicianId = id }
+            )
+        }
+
+        else -> {
+            val detailState by musicianVm.detailState
+                .observeAsState(MusicianViewModel.DetailUiState.Loading)
+
+            LaunchedEffect(selectedMusicianId) {
+                selectedMusicianId?.let { musicianVm.loadMusician(it) }
+            }
+
+            MusicianDetailScreen(
+                state = detailState,
+                onBackClick = { selectedMusicianId = null },
+                onAlbumClick = { albumId -> selectedAlbumId = albumId },
+                onAddAlbumConfirm = { albumId ->
+                    selectedMusicianId?.let { musicianId ->
+                        musicianVm.addAlbumToMusician(musicianId, albumId)
+                    }
+                },
+                selectableAlbums = selectableAlbums,
+                modifier = modifier
+            )
+        }
+    }
 }
+
+
 
 @Composable
 fun CollectorScreenHost(modifier: Modifier = Modifier) {
@@ -208,7 +264,8 @@ fun AlbumScreenPreview() {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             ),
             AlbumDto(
                 id = 101,
@@ -219,7 +276,8 @@ fun AlbumScreenPreview() {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             ),
             AlbumDto(
                 id = 102,
@@ -230,7 +288,8 @@ fun AlbumScreenPreview() {
                 genre = "Rock",
                 recordLabel = "EMI",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             )
         )
 
@@ -249,21 +308,30 @@ fun MusicianScreenPreview() {
             MusicianDto(
                 id = 100,
                 name = "Adele Laurie Blue Adkins",
-                image = "",
+                image = "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
                 description = "Singer",
                 birthDate = "1988-05-05T00:00:00.000Z"
             ),
             MusicianDto(
                 id = 101,
                 name = "Metallica",
-                image = "",
+                image = "https://cdn.shopify.com/s/files/1/0275/3095/products/image_4931268b-7acf-4702-9c55-b2b3a03ed999_1024x1024.jpg",
                 description = "Band",
                 birthDate = "1981-10-28T00:00:00.000Z"
+            ),
+            MusicianDto(
+                id = 102,
+                name = "Queen",
+                image = "https://i.pinimg.com/564x/ab/50/f1/ab50f1be010a3b5e981207a97e00f8ca.jpg",
+                description = "Rock Band",
+                birthDate = "1970-06-27T00:00:00.000Z"
             )
         )
 
-        MusicianScreen(
-            state = MusicianViewModel.UiState.Success(sample)
+        // Use list-based preview composable (no ViewModel required)
+        MusicianListContent(
+            musicians = sample,
+            onMusicianClick = {}
         )
     }
 }

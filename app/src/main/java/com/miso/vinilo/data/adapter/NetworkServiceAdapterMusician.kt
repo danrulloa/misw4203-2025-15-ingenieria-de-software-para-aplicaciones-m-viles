@@ -2,6 +2,7 @@ package com.miso.vinilo.data.adapter
 
 import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.data.adapter.retrofit.MusicianApi
+import com.miso.vinilo.data.dto.AlbumDto
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
@@ -44,6 +45,44 @@ class NetworkServiceAdapterMusicians(
             NetworkResult.Error("Unknown network error", e)
         }
     }
+
+    /**
+     * Fetches the detail of a musician from the network API.
+     * Executes the call on the injected IO dispatcher to avoid blocking the UI thread.
+     * @param id The identifier of the musician to fetch.
+     * @return A [NetworkResult] containing the [MusicianDto] on success or an [Error].
+     */
+    suspend fun getMusician(id: Long): NetworkResult<MusicianDto> {
+        return try {
+            val dto: MusicianDto = withContext(ioDispatcher) {
+                api.getMusician(id)
+            }
+            NetworkResult.Success(dto)
+        } catch (e: Exception) {
+            NetworkResult.Error("Unknown network error", e)
+        }
+    }
+
+
+    /**
+     * Adds an album to a musician, returning the updated [AlbumDto] as provided
+     * by the API. The call is executed on [ioDispatcher].
+     */
+    suspend fun addAlbumToMusician(
+        musicianId: Long,
+        albumId: Long
+    ): NetworkResult<AlbumDto> {
+        return try {
+            val dto = withContext(ioDispatcher) {
+                api.addAlbumToMusician(musicianId, albumId)
+            }
+            NetworkResult.Success(dto)
+        } catch (e: Exception) {
+            NetworkResult.Error("Error al agregar álbum al artista", e)
+        }
+    }
+
+
 
     companion object {
         /**

@@ -60,7 +60,7 @@ class NetworkServiceAdapterAlbumsUnitTest {
         val testDispatcher = UnconfinedTestDispatcher(testScheduler)
         val adapterWithDispatcher = NetworkServiceAdapterAlbums(api, testDispatcher)
         val albumId = 1L
-        val expectedDto = AlbumDto(albumId, "Test Album", "", "", "", "", "", null, null)
+        val expectedDto = AlbumDto(albumId, "Test Album", "", "", "", "", "", null, null, null)
         coEvery { api.getAlbum(albumId) } returns expectedDto
 
         // Act
