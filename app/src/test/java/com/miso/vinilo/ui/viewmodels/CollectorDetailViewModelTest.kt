@@ -109,7 +109,7 @@ class CollectorDetailViewModelTest {
 
         coEvery { collectorRepository.getCollectorDetail(1) } returns NetworkResult.Success(expectedCollector)
         coEvery { albumRepository.getAlbums() } returns NetworkResult.Success(emptyList())
-        coEvery { musicianRepository.getMusician(1) } returns NetworkResult.Success(musician)
+        coEvery { musicianRepository.getMusicians() } returns NetworkResult.Success(listOf(musician))
 
         val viewModel = CollectorDetailViewModel(collectorRepository, albumRepository, musicianRepository)
         viewModel.getCollectorDetail(1)
