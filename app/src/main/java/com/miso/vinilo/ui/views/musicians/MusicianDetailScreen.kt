@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.miso.vinilo.data.GlobalRoleState
-import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
