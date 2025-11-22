@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,7 +71,8 @@ private fun CollectorRow(collector: CollectorDto, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .testTag("collector_row"),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Información del coleccionista
