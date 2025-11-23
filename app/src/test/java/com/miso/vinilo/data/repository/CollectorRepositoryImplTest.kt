@@ -40,4 +40,31 @@ class CollectorRepositoryImplTest {
         val message = (result as NetworkResult.Error).message
         assertEquals("network failure", message)
     }
+
+    @Test
+    fun `getCollectorDetail returns success when adapter returns success`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        val expected = CollectorDto(1, "Manolo Bellon", "3502457896", "manollo@caracol.com.co", null, null, null)
+        coEvery { adapter.getCollectorDetail(1) } returns NetworkResult.Success(expected)
+
+        val repo = CollectorRepository(adapter)
+        val result = repo.getCollectorDetail(1)
+
+        assertTrue(result is NetworkResult.Success)
+        val data = (result as NetworkResult.Success).data
+        assertEquals(expected, data)
+    }
+
+    @Test
+    fun `getCollectorDetail returns error when adapter returns error`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        coEvery { adapter.getCollectorDetail(1) } returns NetworkResult.Error("network failure")
+
+        val repo = CollectorRepository(adapter)
+        val result = repo.getCollectorDetail(1)
+
+        assertTrue(result is NetworkResult.Error)
+        val message = (result as NetworkResult.Error).message
+        assertEquals("network failure", message)
+    }
 }
