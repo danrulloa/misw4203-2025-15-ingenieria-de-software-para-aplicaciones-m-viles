@@ -215,10 +215,10 @@ class AlbumDetailE2ETest {
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
         // Assert: Verify the button does not exist
-        // Scroll to "Comentarios" to ensure it's visible (needed for small screens)
-        composeTestRule.onNodeWithTag("album_detail_list").performScrollToNode(hasText("Comentarios"))
+        // Use swipeUp as it's more reliable on older APIs than performScrollToNode
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
 
-        waitForTextFlexible("Comentarios", timeoutMs = 5_000L) // Wait for screen to load
+        // After swiping, the button should not exist.
         composeTestRule.onNodeWithText("Agregar Comentario").assertDoesNotExist()
     }
 

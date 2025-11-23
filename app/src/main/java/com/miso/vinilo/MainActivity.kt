@@ -36,6 +36,7 @@ import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
+import org.koin.androidx.compose.koinViewModel
 import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
@@ -45,6 +46,7 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel
 import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
 import androidx.compose.runtime.collectAsState
 import com.miso.vinilo.ui.views.collectors.CollectorDetailScreen
@@ -70,35 +72,34 @@ fun ViniloApp() {
     NavigationSuiteScaffold(
         containerColor = Color.Transparent,
         navigationSuiteItems = {
-            AppDestinations.entries.forEach {
+            AppDestinations.entries.forEach { entries ->
 
-                val isSelected = it == currentDestination
+                val isSelected = entries == currentDestination
                 val tint = if (isSelected) PrincipalColor else BaseWhite
 
                 item(
                     icon = {
                         Icon(
-                            it.icon,
-                            contentDescription = it.label,
+                            entries.icon,
+                            contentDescription = entries.label,
                             tint = tint
                         )
                     },
-                    // Force the label to use the app typography so we know it's using Montserrat
                     // Add explicit semantics for E2E tests
                     label = { 
                         Text(
-                            it.label, 
+                            entries.label, 
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), 
                             letterSpacing = (-1.2).sp,
-                            modifier = Modifier.semantics { contentDescription = it.label }
+                            modifier = Modifier.semantics { contentDescription = entries.label }
                         ) 
                     },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    selected = entries == currentDestination,
+                    onClick = { currentDestination = entries }
                 )
             }
         }
-    ) {
+    ) { 
         Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) { innerPadding ->
             val contentModifier = Modifier.padding(innerPadding)
             when (currentDestination) {
@@ -145,7 +146,7 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
+    val musicianVm: MusicianViewModel = koinViewModel()
     val albumVm: AlbumViewModel = viewModel()
 
     var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -214,36 +215,32 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
     }
 }
 
-
-
 @Composable
 fun CollectorScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: CollectorViewModel = viewModel()
-    // Get ViewModel for detail from Koin
-    val detailVm: com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel = org.koin.androidx.compose.koinViewModel()
+    // Get ViewModel for the list (uses Room/Paging) from Koin
+    val listVm: CollectorViewModel = koinViewModel()
+    // Get ViewModel for the detail screen from Koin
+    val detailVm: CollectorDetailViewModel = koinViewModel()
 
     var selectedCollectorId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     if (selectedCollectorId == null) {
-        // Observe LiveData state so the UI recomposes on updates.
-        val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
+        // This is the list view
 
-        // Trigger loading only when the composable enters composition and the VM is idle.
+        // Trigger loading for the Room-based list
         LaunchedEffect(Unit) {
-            if (state is CollectorViewModel.UiState.Idle) {
-                vm.loadCollectors()
-            }
+            listVm.onScreenReady()
         }
 
-        // Pass the current state to the screen composable.
+        // Pass the Room-based viewModel to the list screen
         CollectorsScreen(
-            state = state,
+            viewModel = listVm,
             modifier = modifier,
+            // When a collector is clicked, update the state to navigate to the detail screen
             onCollectorClick = { id -> selectedCollectorId = id }
         )
     } else {
+        // This is the detail view (logic from 'develop')
         val detailState by detailVm.uiState.collectAsState()
 
         LaunchedEffect(selectedCollectorId) {
@@ -257,6 +254,7 @@ fun CollectorScreenHost(modifier: Modifier = Modifier) {
         )
     }
 }
+
 
 enum class AppDestinations(
     val label: String,
