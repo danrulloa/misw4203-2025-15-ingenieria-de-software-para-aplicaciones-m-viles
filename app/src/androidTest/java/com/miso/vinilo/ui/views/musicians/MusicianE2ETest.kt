@@ -248,7 +248,9 @@ class MusicianE2ETest {
             .assertIsDisplayed()
             .performClick()
 
-        // 2) Esperar encabezado "Álbumes" y el álbum "Buscando América" en el carrusel normal
+        // 2) Scroll down for small screens and wait for "Álbumes" header
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Álbumes", substring = true))
         waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
         waitForTextFlexible("Buscando América", timeoutMs = 20_000L)
 
@@ -293,7 +295,9 @@ class MusicianE2ETest {
             .assertIsDisplayed()
             .performClick()
 
-
+        // Scroll down for small screens
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Álbumes", substring = true))
         waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
 
 
@@ -334,6 +338,9 @@ class MusicianE2ETest {
             .assertIsDisplayed()
             .performClick()
 
+        // Scroll down for small screens
+        composeTestRule.onNodeWithTag("musicianDetailList")
+            .performScrollToNode(hasText("Álbumes", substring = true))
         waitForTextFlexible("Álbumes", timeoutMs = 20_000L)
 
         composeTestRule.onNodeWithText("Añadir álbum", substring = true)
