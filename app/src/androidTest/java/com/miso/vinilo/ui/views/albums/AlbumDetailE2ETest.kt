@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.miso.vinilo.MainActivity
@@ -153,7 +154,8 @@ class AlbumDetailE2ETest {
         waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
-        // 4. Scroll to and click on 'Add Comment' button
+        // 4. Scroll down for small screens and click on 'Add Comment' button
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
         waitForTextFlexible("Agregar Comentario", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Agregar Comentario").performClick()
 
@@ -209,7 +211,9 @@ class AlbumDetailE2ETest {
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
         // Assert: Verify the button does not exist
-        waitForTextFlexible("Comentarios", timeoutMs = 5_000L) // Wait for screen to load
+        // Scroll down for small screens and wait longer for slow devices (API 21)
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
+        waitForTextFlexible("Comentarios", timeoutMs = 15_000L) // Wait for screen to load
         composeTestRule.onNodeWithText("Agregar Comentario").assertDoesNotExist()
     }
 

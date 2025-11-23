@@ -57,7 +57,7 @@ class CollectorDetailViewModelTest {
             favoritePerformers = null
         )
         val albums = listOf(
-            AlbumDto(1, "Album One", "cover.jpg", "2020-01-01", "Desc", "Rock", "Label", null, null)
+            AlbumDto(1, "Album One", "cover.jpg", "2020-01-01", "Desc", "Rock", "Label", null, null, null)
         )
 
         coEvery { collectorRepository.getCollectorDetail(1) } returns NetworkResult.Success(expectedCollector)
