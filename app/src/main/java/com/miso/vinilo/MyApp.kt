@@ -8,7 +8,6 @@ import org.koin.core.logger.Level
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import okhttp3.OkHttpClient
-import java.security.Security
 import javax.net.ssl.SSLContext
 import org.koin.core.logger.PrintLogger
 
