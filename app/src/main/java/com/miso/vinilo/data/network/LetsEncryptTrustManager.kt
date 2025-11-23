@@ -2,7 +2,6 @@ package com.miso.vinilo.data.network
 
 import android.content.Context
 import com.miso.vinilo.R
-import java.io.InputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
