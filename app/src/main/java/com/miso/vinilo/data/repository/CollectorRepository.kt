@@ -56,12 +56,8 @@ class CollectorRepository(
         }
     }
 
-    suspend fun getCollector(id: Long): NetworkResult<CollectorDto> {
+    // Method from 'develop' for the detail screen
+    suspend fun getCollectorDetail(id: Long): NetworkResult<CollectorDto> {
         return serviceAdapter.getCollector(id)
-    }
-
-     companion object {
-        fun create(baseUrl: String, collectorDao: CollectorDao): CollectorRepository =
-            CollectorRepository(NetworkServiceAdapterCollectors.create(baseUrl), collectorDao)
     }
 }

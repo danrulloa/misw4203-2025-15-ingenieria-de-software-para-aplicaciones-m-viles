@@ -10,8 +10,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CollectorRepositoryTest {
@@ -106,5 +107,41 @@ class CollectorRepositoryTest {
 
         // Assert
         coVerify { adapter.getCollectors() }
+    }
+
+    @Test
+    fun `getCollectorDetail returns success when adapter succeeds`() = runTest {
+        // Arrange
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
+        val collectorDto = CollectorDto(1, "Manolo Bellon", "3502457896", "manollo@caracol.com.co")
+
+        coEvery { adapter.getCollector(1) } returns NetworkResult.Success(collectorDto)
+
+        // Act
+        val result = repository.getCollectorDetail(1)
+
+        // Assert
+        assertTrue(result is NetworkResult.Success)
+        assertEquals(collectorDto, (result as NetworkResult.Success).data)
+    }
+
+    @Test
+    fun `getCollectorDetail returns error when adapter fails`() = runTest {
+        // Arrange
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
+        val errorMsg = "Network error"
+
+        coEvery { adapter.getCollector(1) } returns NetworkResult.Error(errorMsg)
+
+        // Act
+        val result = repository.getCollectorDetail(1)
+
+        // Assert
+        assertTrue(result is NetworkResult.Error)
+        assertEquals(errorMsg, (result as NetworkResult.Error).message)
     }
 }

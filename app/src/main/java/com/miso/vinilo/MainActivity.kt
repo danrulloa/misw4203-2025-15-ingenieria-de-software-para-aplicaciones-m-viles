@@ -34,6 +34,7 @@ import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
+import org.koin.androidx.compose.koinViewModel
 import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
@@ -43,7 +44,10 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel
 import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+import androidx.compose.runtime.collectAsState
+import com.miso.vinilo.ui.views.collectors.CollectorDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -133,7 +137,7 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
+    val musicianVm: MusicianViewModel = koinViewModel()
     val albumVm: AlbumViewModel = viewModel()
 
     var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -204,14 +208,44 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun CollectorScreenHost(modifier: Modifier = Modifier) {
-    val vm: CollectorViewModel = org.koin.androidx.compose.koinViewModel()
+    // Get ViewModel for the list (uses Room/Paging) from Koin
+    val listVm: CollectorViewModel = koinViewModel()
+    // Get ViewModel for the detail screen from Koin
+    val detailVm: CollectorDetailViewModel = koinViewModel()
 
-    LaunchedEffect(Unit) {
-        vm.onScreenReady()
+    var selectedCollectorId by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    if (selectedCollectorId == null) {
+        // This is the list view
+
+        // Trigger loading for the Room-based list
+        LaunchedEffect(Unit) {
+            listVm.onScreenReady()
+        }
+
+        // Pass the Room-based viewModel to the list screen
+        CollectorsScreen(
+            viewModel = listVm,
+            modifier = modifier,
+            // When a collector is clicked, update the state to navigate to the detail screen
+            onCollectorClick = { id -> selectedCollectorId = id }
+        )
+    } else {
+        // This is the detail view (logic from 'develop')
+        val detailState by detailVm.uiState.collectAsState()
+
+        LaunchedEffect(selectedCollectorId) {
+            selectedCollectorId?.let { detailVm.getCollectorDetail(it) }
+        }
+
+        CollectorDetailScreen(
+            state = detailState,
+            onBackClick = { selectedCollectorId = null },
+            modifier = modifier
+        )
     }
-
-    CollectorsScreen(viewModel = vm, modifier = modifier, onCollectorClick = {})
 }
+
 
 enum class AppDestinations(
     val label: String,

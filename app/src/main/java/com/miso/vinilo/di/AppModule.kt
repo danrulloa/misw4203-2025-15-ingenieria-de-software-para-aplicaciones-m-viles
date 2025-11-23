@@ -1,37 +1,59 @@
 package com.miso.vinilo.di
 
-import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
+import com.miso.vinilo.data.adapter.NetworkConfig
+import com.miso.vinilo.data.adapter.NetworkServiceAdapterAlbums
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterCollectors
+import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
+import com.miso.vinilo.data.adapter.retrofit.AlbumApi
+import com.miso.vinilo.data.adapter.retrofit.CollectorApi
+import com.miso.vinilo.data.adapter.retrofit.MusicianApi
 import com.miso.vinilo.data.database.ViniloDatabase
-import com.miso.vinilo.data.repository.MusicianRepository
+import com.miso.vinilo.data.repository.AlbumRepository
 import com.miso.vinilo.data.repository.CollectorRepository
-import com.miso.vinilo.ui.viewmodels.MusicianViewModel
+import com.miso.vinilo.data.repository.MusicianRepository
+import com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.viewmodels.MusicianViewModel
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
-import org.koin.core.module.dsl.viewModel
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
-import com.miso.vinilo.data.adapter.NetworkConfig // Added to honor test overrides
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 
-// Koin module providing network, repository and ViewModel bindings.
 val appModule = module {
+
+    // General networking
+    single {
+        Retrofit.Builder()
+            .baseUrl(NetworkConfig.baseUrl)
+            .addConverterFactory(MoshiConverterFactory.create())
+            .build()
+    }
+    single { Dispatchers.IO }
+
     // Room Database
     single { ViniloDatabase.getDatabase(androidContext()) }
-    single { get<ViniloDatabase>().musicianDao() }
-    single { get<ViniloDatabase>().collectorDao() }
+
+    // Albums
+    single { get<Retrofit>().create(AlbumApi::class.java) }
+    single { NetworkServiceAdapterAlbums(get(), get()) }
+    single { AlbumRepository(get()) }
 
     // Musicians
-    // Bind the concrete network adapter directly using NetworkConfig.baseUrl so tests can override it
-    single { NetworkServiceAdapterMusicians.create(NetworkConfig.baseUrl) }
-    // Provide the concrete repository instance with Room DAO
-    single { MusicianRepository(get<NetworkServiceAdapterMusicians>(), get()) }
-    // Provide ViewModel wired directly to the repository (use-case layer removed)
-    viewModel { MusicianViewModel(get<MusicianRepository>()) }
+    single { get<Retrofit>().create(MusicianApi::class.java) }
+    single { get<ViniloDatabase>().musicianDao() }
+    single { NetworkServiceAdapterMusicians(get(), get()) }
+    single { MusicianRepository(get(), get()) }
+    viewModel { MusicianViewModel(get()) }
 
     // Collectors
-    // Bind the concrete network adapter directly
-    single { NetworkServiceAdapterCollectors.create(NetworkConfig.baseUrl) }
-    // Provide the concrete repository instance
-    single { CollectorRepository(get<NetworkServiceAdapterCollectors>(), get()) }
-    // Provide ViewModel wired directly to the repository (use-case layer removed)
-    viewModel { CollectorViewModel(get<CollectorRepository>()) }
+    single { get<Retrofit>().create(CollectorApi::class.java) }
+    single { get<ViniloDatabase>().collectorDao() }
+    single { NetworkServiceAdapterCollectors(get(), get()) }
+    single { CollectorRepository(get(), get()) }
+    // ViewModel for the list (uses Room)
+    viewModel { CollectorViewModel(get()) }
+    // ViewModel for the detail screen
+    viewModel { CollectorDetailViewModel(get(), get(), get()) }
 }
