@@ -66,27 +66,27 @@ fun ViniloApp() {
     NavigationSuiteScaffold(
         containerColor = Color.Transparent,
         navigationSuiteItems = {
-            AppDestinations.entries.forEach {
+            AppDestinations.entries.forEach { entries ->
 
-                val isSelected = it == currentDestination
+                val isSelected = entries == currentDestination
                 val tint = if (isSelected) PrincipalColor else BaseWhite
 
                 item(
                     icon = {
                         Icon(
-                            it.icon,
-                            contentDescription = it.label,
+                            entries.icon,
+                            contentDescription = entries.label,
                             tint = tint
                         )
                     },
                     // Force the label to use the app typography so we know it's using Montserrat
-                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall, letterSpacing = (-0.9).sp) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    label = { Text(entries.label, style = MaterialTheme.typography.labelSmall, letterSpacing = (-0.9).sp) },
+                    selected = entries == currentDestination,
+                    onClick = { currentDestination = entries }
                 )
             }
         }
-    ) {
+    ) { 
         Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) { innerPadding ->
             val contentModifier = Modifier.padding(innerPadding)
             when (currentDestination) {
@@ -202,26 +202,15 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
     }
 }
 
-
-
 @Composable
 fun CollectorScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: CollectorViewModel = viewModel()
+    val vm: CollectorViewModel = org.koin.androidx.compose.koinViewModel()
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
-
-    // Trigger loading only when the composable enters composition and the VM is idle.
     LaunchedEffect(Unit) {
-        if (state is CollectorViewModel.UiState.Idle) {
-            vm.loadCollectors()
-        }
+        vm.onScreenReady()
     }
 
-    // Pass the current state to the screen composable.
-    CollectorsScreen(state = state, modifier = modifier)
+    CollectorsScreen(viewModel = vm, modifier = modifier, onCollectorClick = {})
 }
 
 enum class AppDestinations(

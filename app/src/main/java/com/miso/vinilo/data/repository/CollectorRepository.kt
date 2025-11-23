@@ -1,27 +1,67 @@
 package com.miso.vinilo.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterCollectors
+import com.miso.vinilo.data.database.dao.CollectorDao
+import com.miso.vinilo.data.database.entities.CollectorEntity
 import com.miso.vinilo.data.dto.CollectorDto
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-/**
- * Concrete repository that exposes collector-related data operations and delegates to a network adapter.
- * The previous interface `CollectorRepository` was removed; callers should use this concrete class directly.
- */
 class CollectorRepository(
-    private val serviceAdapter: NetworkServiceAdapterCollectors
+    private val serviceAdapter: NetworkServiceAdapterCollectors,
+    private val collectorDao: CollectorDao
 ) {
 
-    suspend fun getCollectors(): NetworkResult<List<CollectorDto>> {
-        return serviceAdapter.getCollectors()
+    fun getPagedCollectors(): Flow<PagingData<CollectorDto>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 9,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { collectorDao.getPagedCollectors() }
+        ).flow.map { pagingData ->
+            pagingData.map { entity -> entity.toDto() }
+        }
     }
 
-    companion object {
-        /**
-         * Convenience factory to create a repository wired with the network adapter.
-         * @param baseUrl Base URL for the Retrofit service (e.g. "http://localhost:3000/")
-         */
-        fun create(baseUrl: String): CollectorRepository =
-            CollectorRepository(NetworkServiceAdapterCollectors.create(baseUrl))
+    suspend fun refreshIfNeeded() {
+        val lastUpdate = collectorDao.getLastUpdateTime() ?: 0
+        val elapsed = System.currentTimeMillis() - lastUpdate
+        val thirtyMinutes = 1800000L
+
+        if (elapsed > thirtyMinutes) {
+            fetchAndStore()
+        }
+    }
+
+    suspend fun forceRefresh() {
+        fetchAndStore()
+    }
+
+    private suspend fun fetchAndStore() {
+        when (val result = serviceAdapter.getCollectors()) {
+            is NetworkResult.Success -> {
+                val entities = result.data.map { CollectorEntity.fromDto(it) }
+                collectorDao.deleteAll()
+                collectorDao.insertAll(entities)
+            }
+            is NetworkResult.Error -> {
+                // Silent fail
+            }
+        }
+    }
+
+    suspend fun getCollector(id: Long): NetworkResult<CollectorDto> {
+        return serviceAdapter.getCollector(id)
+    }
+
+     companion object {
+        fun create(baseUrl: String, collectorDao: CollectorDao): CollectorRepository =
+            CollectorRepository(NetworkServiceAdapterCollectors.create(baseUrl), collectorDao)
     }
 }

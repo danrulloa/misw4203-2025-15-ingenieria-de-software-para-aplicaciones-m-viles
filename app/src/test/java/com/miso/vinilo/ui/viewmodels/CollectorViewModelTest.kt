@@ -1,20 +1,18 @@
 package com.miso.vinilo.ui.viewmodels
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.miso.vinilo.data.dto.CollectorDto
-import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.repository.CollectorRepository
-import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -38,41 +36,32 @@ class CollectorViewModelTest {
     }
 
     @Test
-    fun `loadCollectors updates state to Success when repository returns success`() = runTest {
-        val expected = listOf(
-            CollectorDto(1, "Manolo Bellon", "3502457896", "manollo@caracol.com.co", null, null, null)
-        )
-        val repo = mockk<CollectorRepository>()
-        coEvery { repo.getCollectors() } returns NetworkResult.Success(expected)
+    fun `onScreenReady calls repository to refresh if needed`() = runTest {
+        // Arrange
+        val repository = mockk<CollectorRepository>(relaxUnitFun = true)
+        every { repository.getPagedCollectors() } returns emptyFlow()
+        val viewModel = CollectorViewModel(repository)
 
-        val vm = CollectorViewModel(repo)
+        // Act
+        viewModel.onScreenReady()
+        testDispatcher.scheduler.advanceUntilIdle() // Run the coroutine
 
-        // call the explicit load function introduced in the refactor
-        vm.loadCollectors()
-
-        // advance the dispatcher so the viewModelScope coroutine runs
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = vm.state.value
-        assertTrue(state is CollectorViewModel.UiState.Success)
-        val data = (state as CollectorViewModel.UiState.Success).data
-        assertEquals(expected, data)
+        // Assert
+        coVerify { repository.refreshIfNeeded() }
     }
 
     @Test
-    fun `loadCollectors updates state to Error when repository returns error`() = runTest {
-        val repo = mockk<CollectorRepository>()
-        coEvery { repo.getCollectors() } returns NetworkResult.Error("fail")
+    fun `onForceRefresh calls repository to force a refresh`() = runTest {
+        // Arrange
+        val repository = mockk<CollectorRepository>(relaxUnitFun = true)
+        every { repository.getPagedCollectors() } returns emptyFlow()
+        val viewModel = CollectorViewModel(repository)
 
-        val vm = CollectorViewModel(repo)
+        // Act
+        viewModel.onForceRefresh()
+        testDispatcher.scheduler.advanceUntilIdle() // Run the coroutine
 
-        vm.loadCollectors()
-
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = vm.state.value
-        assertTrue(state is CollectorViewModel.UiState.Error)
-        val message = (state as CollectorViewModel.UiState.Error).message
-        assertEquals("fail", message)
+        // Assert
+        coVerify { repository.forceRefresh() }
     }
 }

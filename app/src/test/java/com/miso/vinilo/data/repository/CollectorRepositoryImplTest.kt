@@ -1,43 +1,110 @@
 package com.miso.vinilo.data.repository
 
-import com.miso.vinilo.data.dto.CollectorDto
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterCollectors
+import com.miso.vinilo.data.database.dao.CollectorDao
+import com.miso.vinilo.data.database.entities.CollectorEntity
+import com.miso.vinilo.data.dto.CollectorDto
+import io.mockk.Ordering
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CollectorRepositoryImplTest {
+class CollectorRepositoryTest {
 
     @Test
-    fun `getCollectors returns success when adapter returns success`() = runTest {
+    fun `forceRefresh fetches from network and stores in dao on success`() = runTest {
+        // Arrange
         val adapter = mockk<NetworkServiceAdapterCollectors>()
-        val expected = listOf(
-            CollectorDto(1, "Manolo Bellon", "3502457896", "manollo@caracol.com.co", null, null, null)
-        )
-        coEvery { adapter.getCollectors() } returns NetworkResult.Success(expected)
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
 
-        val repo = CollectorRepository(adapter)
-        val result = repo.getCollectors()
+        val dtoList = listOf(CollectorDto(1, "Manolo Bellon", "3502457896", "manollo@caracol.com.co"))
+        coEvery { adapter.getCollectors() } returns NetworkResult.Success(dtoList)
+        val entitySlot = slot<List<CollectorEntity>>()
 
-        assertTrue(result is NetworkResult.Success)
-        val data = (result as NetworkResult.Success).data
-        assertEquals(expected, data)
+        // Act
+        repository.forceRefresh()
+
+        // Assert
+        coVerify(ordering = Ordering.SEQUENCE) {
+            dao.deleteAll()
+            dao.insertAll(capture(entitySlot))
+        }
+        assertEquals(1, entitySlot.captured.size)
+        assertEquals(dtoList.first().id, entitySlot.captured.first().id)
+        assertEquals(dtoList.first().name, entitySlot.captured.first().name)
     }
 
     @Test
-    fun `getCollectors returns error when adapter returns error`() = runTest {
+    fun `forceRefresh does not touch dao on network error`() = runTest {
+        // Arrange
         val adapter = mockk<NetworkServiceAdapterCollectors>()
-        coEvery { adapter.getCollectors() } returns NetworkResult.Error("network failure")
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
 
-        val repo = CollectorRepository(adapter)
-        val result = repo.getCollectors()
+        coEvery { adapter.getCollectors() } returns NetworkResult.Error("Network failure")
 
-        assertTrue(result is NetworkResult.Error)
-        val message = (result as NetworkResult.Error).message
-        assertEquals("network failure", message)
+        // Act
+        repository.forceRefresh()
+
+        // Assert
+        coVerify(exactly = 0) { dao.deleteAll() }
+        coVerify(exactly = 0) { dao.insertAll(any()) }
+    }
+
+    @Test
+    fun `refreshIfNeeded fetches when cache is old`() = runTest {
+        // Arrange
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
+        val thirtyMinutes = 1800000L
+
+        coEvery { dao.getLastUpdateTime() } returns System.currentTimeMillis() - (thirtyMinutes + 1)
+        coEvery { adapter.getCollectors() } returns NetworkResult.Success(emptyList())
+
+        // Act
+        repository.refreshIfNeeded()
+
+        // Assert
+        coVerify { adapter.getCollectors() }
+    }
+
+    @Test
+    fun `refreshIfNeeded does not fetch when cache is fresh`() = runTest {
+        // Arrange
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
+
+        coEvery { dao.getLastUpdateTime() } returns System.currentTimeMillis()
+
+        // Act
+        repository.refreshIfNeeded()
+
+        // Assert
+        coVerify(exactly = 0) { adapter.getCollectors() }
+    }
+
+    @Test
+    fun `refreshIfNeeded fetches when cache is null`() = runTest {
+        // Arrange
+        val adapter = mockk<NetworkServiceAdapterCollectors>()
+        val dao = mockk<CollectorDao>(relaxUnitFun = true)
+        val repository = CollectorRepository(adapter, dao)
+
+        coEvery { dao.getLastUpdateTime() } returns null
+        coEvery { adapter.getCollectors() } returns NetworkResult.Success(emptyList())
+
+        // Act
+        repository.refreshIfNeeded()
+
+        // Assert
+        coVerify { adapter.getCollectors() }
     }
 }

@@ -1,6 +1,5 @@
 package com.miso.vinilo.di
 
-import com.miso.vinilo.BuildConfig
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterCollectors
 import com.miso.vinilo.data.database.ViniloDatabase
@@ -18,6 +17,7 @@ val appModule = module {
     // Room Database
     single { ViniloDatabase.getDatabase(androidContext()) }
     single { get<ViniloDatabase>().musicianDao() }
+    single { get<ViniloDatabase>().collectorDao() }
 
     // Musicians
     // Bind the concrete network adapter directly using NetworkConfig.baseUrl so tests can override it
@@ -29,9 +29,9 @@ val appModule = module {
 
     // Collectors
     // Bind the concrete network adapter directly
-    single { NetworkServiceAdapterCollectors.create(BuildConfig.BASE_URL) }
+    single { NetworkServiceAdapterCollectors.create(NetworkConfig.baseUrl) }
     // Provide the concrete repository instance
-    single { CollectorRepository(get<NetworkServiceAdapterCollectors>()) }
+    single { CollectorRepository(get<NetworkServiceAdapterCollectors>(), get()) }
     // Provide ViewModel wired directly to the repository (use-case layer removed)
     viewModel { CollectorViewModel(get<CollectorRepository>()) }
 }
