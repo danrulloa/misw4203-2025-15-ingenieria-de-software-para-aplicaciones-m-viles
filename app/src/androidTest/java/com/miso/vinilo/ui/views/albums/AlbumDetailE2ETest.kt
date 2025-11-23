@@ -2,14 +2,19 @@ package com.miso.vinilo.ui.views.albums
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.miso.vinilo.MainActivity
@@ -153,7 +158,8 @@ class AlbumDetailE2ETest {
         waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
-        // 4. Scroll to and click on 'Add Comment' button
+        // 4. Scroll down for small screens and click on 'Add Comment' button
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
         waitForTextFlexible("Agregar Comentario", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Agregar Comentario").performClick()
 
@@ -209,7 +215,10 @@ class AlbumDetailE2ETest {
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
         // Assert: Verify the button does not exist
-        waitForTextFlexible("Comentarios", timeoutMs = 5_000L) // Wait for screen to load
+        // Use swipeUp as it's more reliable on older APIs than performScrollToNode
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
+
+        // After swiping, the button should not exist.
         composeTestRule.onNodeWithText("Agregar Comentario").assertDoesNotExist()
     }
 
