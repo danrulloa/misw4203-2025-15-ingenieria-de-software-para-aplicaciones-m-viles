@@ -16,6 +16,10 @@ class CollectorRepository(
         return serviceAdapter.getCollectors()
     }
 
+    suspend fun getCollectorDetail(id: Long): NetworkResult<CollectorDto> {
+        return serviceAdapter.getCollectorDetail(id)
+    }
+
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.
