@@ -1,8 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="base_white">#FFF0F0F0</color>
-    <color name="base_black">#FF0F0E0E</color>
-    <color name="base_gray">#FF333333</color>
-    <color name="principal_color">#FF1C1123</color>
-    <color name="secondary_color">#FF4F3A67</color>
 </resources>

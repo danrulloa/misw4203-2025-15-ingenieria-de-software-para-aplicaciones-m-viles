@@ -2,7 +2,6 @@ package com.miso.vinilo.data.adapter.retrofit
 
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.MusicianDto
-import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
