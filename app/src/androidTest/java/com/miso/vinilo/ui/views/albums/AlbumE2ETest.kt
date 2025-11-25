@@ -100,6 +100,43 @@ class AlbumE2ETest {
 
     @Test
     fun e2e_userNavigatesToAlbums_and_seesAlbumsFromNetwork() {
+        // Arrange: respuesta de la API para /albums
+        val albumsJson = """
+        [
+          {
+            "id": 1,
+            "name": "Album Uno",
+            "cover": "https://example.com/album1.jpg",
+            "releaseDate": "2000-01-01T00:00:00.000Z",
+            "description": "Descripción álbum uno",
+            "genre": "Rock",
+            "recordLabel": "Sony",
+            "tracks": [],
+            "performers": [],
+            "comments": []
+          },
+          {
+            "id": 2,
+            "name": "Album Dos",
+            "cover": "https://example.com/album2.jpg",
+            "releaseDate": "2001-01-01T00:00:00.000Z",
+            "description": "Descripción álbum dos",
+            "genre": "Pop",
+            "recordLabel": "Universal",
+            "tracks": [],
+            "performers": [],
+            "comments": []
+          }
+        ]
+    """.trimIndent()
+
+        // Esta respuesta será consumida por la llamada a getAlbums() cuando entremos a la pestaña Álbumes
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(albumsJson)
+        )
+
         Log.i("AlbumE2ETest", "Test start: clicking nav item")
         // Simulate user clicking the "Albumes" tab in the bottom navigation
         waitAndClickNavItem("Albumes")
@@ -112,8 +149,11 @@ class AlbumE2ETest {
         // Try to observe a request but don't fail the test if absent
         try {
             val recorded = server.takeRequest(500, TimeUnit.MILLISECONDS)
-            if (recorded != null) Log.i("AlbumE2ETest", "Recorded request: path=${recorded.path}")
-            else Log.w("AlbumE2ETest", "No request observed in short interval")
+            if (recorded != null) {
+                Log.i("AlbumE2ETest", "Recorded request: path=${recorded.path}")
+            } else {
+                Log.w("AlbumE2ETest", "No request observed in short interval")
+            }
         } catch (e: Throwable) {
             Log.w("AlbumE2ETest", "Error while taking request: ${e.message}")
         }
@@ -129,6 +169,7 @@ class AlbumE2ETest {
         composeTestRule.onNodeWithText("Album Dos", substring = true).assertIsDisplayed()
         Log.i("AlbumE2ETest", "Test finished successfully")
     }
+
 
     private fun waitForTextFlexible(text: String, timeoutMs: Long = 5_000L) {
         try {

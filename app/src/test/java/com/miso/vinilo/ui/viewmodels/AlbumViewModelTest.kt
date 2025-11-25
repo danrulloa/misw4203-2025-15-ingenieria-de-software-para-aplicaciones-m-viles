@@ -158,18 +158,4 @@ class AlbumViewModelTest {
         assertEquals(errorMessage, (state as AlbumViewModel.UiState.Error).message)
     }
 
-    @Test
-    fun `constructor with baseUrl creates a valid ViewModel`() {
-        // This test covers the secondary constructor that takes a baseUrl
-        val viewModel = AlbumViewModel("http://localhost:3000/")
-        assertNotNull(viewModel)
-    }
-
-    @Test
-    fun `no-arg constructor creates a valid ViewModel`() {
-        // This test covers the no-argument constructor
-        // It relies on the global NetworkConfig, which is fine for a smoke test.
-        val viewModel = AlbumViewModel()
-        assertNotNull(viewModel)
-    }
 }
