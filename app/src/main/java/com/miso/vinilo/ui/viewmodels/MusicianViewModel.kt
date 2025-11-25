@@ -162,16 +162,6 @@ class MusicianViewModel(
         data class Error(val message: String) : DetailUiState()
     }
 
-    // ===== Helpers =====
-    private fun List<AlbumDto>.toAlbumUi(): List<AlbumUi> = map {
-        AlbumUi(
-            id = it.id,
-            name = it.name,
-            cover = it.cover,
-            year = it.releaseDate?.take(4) ?: "—"
-        )
-    }
-
     // NOTE: ViewModel instances should be created by DI (Koin) or by providing a Repository.
     // Secondary convenience constructors were removed because repository creation requires
     // a MusicianDao instance (Room) which is not available here.
