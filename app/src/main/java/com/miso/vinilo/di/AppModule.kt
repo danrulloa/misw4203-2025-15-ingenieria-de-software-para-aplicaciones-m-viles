@@ -38,7 +38,7 @@ val appModule = module {
     // Albums
     single { get<Retrofit>().create(AlbumApi::class.java) }
     single { NetworkServiceAdapterAlbums(get(), get()) }
-    single { AlbumRepository(get()) }
+    single { AlbumRepository(get(), get()) }
 
     // Musicians
     single { get<Retrofit>().create(MusicianApi::class.java) }
