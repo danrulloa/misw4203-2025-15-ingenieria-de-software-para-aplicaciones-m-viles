@@ -37,6 +37,7 @@ val appModule = module {
 
     // Albums
     single { get<Retrofit>().create(AlbumApi::class.java) }
+    single { get<ViniloDatabase>().albumDao() }
     single { NetworkServiceAdapterAlbums(get(), get()) }
     single { AlbumRepository(get(), get()) }
 
