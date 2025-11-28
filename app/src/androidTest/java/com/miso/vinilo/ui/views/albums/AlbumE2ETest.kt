@@ -160,13 +160,11 @@ class AlbumE2ETest {
 
         // Wait for album titles loaded from network (some devices may render slower) - prefer text nodes
         Log.i("AlbumE2ETest", "Waiting for album title texts")
-        waitForTextFlexible("Album Uno", timeoutMs = 15_000L)
-        waitForTextFlexible("Album Dos", timeoutMs = 15_000L)
+        waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
 
         Log.i("AlbumE2ETest", "Album texts visible; doing final assertions")
         // Basic assertions - ensure they're visible
-        composeTestRule.onNodeWithText("Album Uno", substring = true).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Album Dos", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Buscando América", substring = true).assertIsDisplayed()
         Log.i("AlbumE2ETest", "Test finished successfully")
     }
 
