@@ -19,8 +19,10 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.miso.vinilo.MainActivity
 import com.miso.vinilo.data.adapter.NetworkConfig
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -54,7 +56,7 @@ class AlbumDetailE2ETest {
 
     @Test
     fun e2e_userNavigatesToDetail_and_seesAlbumDetails() {
-        // Arrange: Enqueue responses for this specific test
+        // --- Configuración local del Dispatcher SOLO para este test ---
         val albumListJson = """
         [
           {
@@ -67,8 +69,7 @@ class AlbumDetailE2ETest {
             "recordLabel": "Elektra"
           }
         ]
-        """
-        server.enqueue(MockResponse().setResponseCode(200).setBody(albumListJson))
+    """.trimIndent()
 
         val albumDetailJson = """
         {
@@ -80,23 +81,56 @@ class AlbumDetailE2ETest {
             "genre": "Salsa",
             "recordLabel": "Elektra",
             "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
-            "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}]
+            "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}],
+            "comments": []
         }
-        """
-        server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailJson))
+    """.trimIndent()
 
-        // Act & Assert
-        // 1. Navigate to the Albums tab
-        waitAndClickNavItem("Albumes")
+        // Guardamos el dispatcher anterior para restaurarlo al final
+        val previousDispatcher = server.dispatcher
 
-        // 2. Wait for the list item to appear and click it
-        waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
-        composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val path = request.path ?: ""
+                return when {
+                    // Lista de álbumes
+                    path.startsWith("/albums") && !path.startsWith("/albums/100") -> {
+                        MockResponse()
+                            .setResponseCode(200)
+                            .setBody(albumListJson)
+                    }
+                    // Detalle del álbum 100
+                    path.startsWith("/albums/100") -> {
+                        MockResponse()
+                            .setResponseCode(200)
+                            .setBody(albumDetailJson)
+                    }
+                    else -> {
+                        // Cualquier otra cosa -> 404 para detectar llamadas inesperadas
+                        MockResponse().setResponseCode(404)
+                    }
+                }
+            }
+        }
 
-        // 3. Verify that the detail screen is shown by looking for a unique element
-        waitForTextFlexible("Canciones", timeoutMs = 5_000L)
-        composeTestRule.onNodeWithText("Canciones").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Decisiones").assertIsDisplayed() // Also check for a track name
+        try {
+            // --- Act & Assert ---
+
+            // 1. Navigate to the Albums tab
+            waitAndClickNavItem("Albumes")
+
+            // 2. Wait for the list item to appear and click it
+            waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
+            composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
+
+            // 3. Verify that the detail screen is shown by looking for a unique element
+            waitForTextFlexible("Canciones", timeoutMs = 5_000L)
+            composeTestRule.onNodeWithText("Canciones").assertIsDisplayed()
+            composeTestRule.onNodeWithText("Decisiones").assertIsDisplayed() // Also check for a track name
+        } finally {
+            // Restauramos el dispatcher original para no afectar otros tests
+            server.dispatcher = previousDispatcher
+        }
     }
 
     @Test

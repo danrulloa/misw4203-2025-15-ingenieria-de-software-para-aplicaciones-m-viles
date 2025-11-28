@@ -2,6 +2,7 @@ package com.miso.vinilo.data.repository
 
 import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterAlbums
+import com.miso.vinilo.data.database.dao.AlbumDao
 import com.miso.vinilo.data.dto.AlbumDto
 import com.miso.vinilo.data.dto.CollectorIdDto
 import com.miso.vinilo.data.dto.CommentDto
@@ -24,11 +25,11 @@ class AlbumRepositoryTest {
         val albumId = 100L
         val expectedAlbum = AlbumDto(albumId, "Test Album", "", "", "", "", "", null, null, null)
         val expectedResult = NetworkResult.Success(expectedAlbum)
-
+        val mockAlbumDao = mockk<AlbumDao>(relaxed = true)
         val mockServiceAdapter = mockk<NetworkServiceAdapterAlbums>()
         coEvery { mockServiceAdapter.getAlbum(albumId) } returns expectedResult
 
-        val repository = AlbumRepository(mockServiceAdapter)
+        val repository = AlbumRepository(mockServiceAdapter, mockAlbumDao)
 
         // Act
         val result = repository.getAlbum(albumId)
@@ -45,11 +46,11 @@ class AlbumRepositoryTest {
         // Arrange
         val expectedAlbums = listOf(AlbumDto(100L, "Test Album", "", "", "", "", "", null, null, null))
         val expectedResult = NetworkResult.Success(expectedAlbums)
-
+        val mockAlbumDao = mockk<AlbumDao>(relaxed = true)
         val mockServiceAdapter = mockk<NetworkServiceAdapterAlbums>()
         coEvery { mockServiceAdapter.getAlbums() } returns expectedResult
 
-        val repository = AlbumRepository(mockServiceAdapter)
+        val repository = AlbumRepository(mockServiceAdapter, mockAlbumDao)
 
         // Act
         val result = repository.getAlbums()
@@ -66,11 +67,11 @@ class AlbumRepositoryTest {
         val newComment = NewCommentDto(rating = 5, description = "A comment", collector = CollectorIdDto(100L))
         val expectedComment = CommentDto(id = 1, description = "A comment", rating = 5)
         val expectedResult = NetworkResult.Success(expectedComment)
-
+        val mockAlbumDao = mockk<AlbumDao>()
         val mockServiceAdapter = mockk<NetworkServiceAdapterAlbums>()
         coEvery { mockServiceAdapter.postComment(albumId, newComment) } returns expectedResult
 
-        val repository = AlbumRepository(mockServiceAdapter)
+        val repository = AlbumRepository(mockServiceAdapter, mockAlbumDao)
 
         // Act
         val result = repository.postComment(albumId, newComment)
@@ -80,15 +81,4 @@ class AlbumRepositoryTest {
         assertEquals(expectedResult, result)
     }
 
-    @Test
-    fun `create factory returns a valid AlbumRepository instance`() {
-        // Arrange
-        val baseUrl = "http://localhost:3000/"
-
-        // Act
-        val repository = AlbumRepository.create(baseUrl)
-
-        // Assert
-        assertNotNull(repository)
-    }
 }

@@ -49,6 +49,8 @@ import com.miso.vinilo.ui.viewmodels.CollectorViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel
 import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.miso.vinilo.ui.viewmodels.AlbumViewModelFactory
 import com.miso.vinilo.ui.views.collectors.CollectorDetailScreen
 
 class MainActivity : ComponentActivity() {
@@ -116,7 +118,10 @@ fun ViniloApp() {
 fun AlbumScreenHost(modifier: Modifier = Modifier) {
     // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
     // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: AlbumViewModel = viewModel()
+    val context = LocalContext.current
+    val vm: AlbumViewModel = viewModel(
+        factory = AlbumViewModelFactory(context)
+    )
     var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     if (selectedAlbumId == null) {
@@ -147,12 +152,14 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
     val musicianVm: MusicianViewModel = koinViewModel()
-    val albumVm: AlbumViewModel = viewModel()
+    val context = LocalContext.current
+    val albumVm: AlbumViewModel = viewModel(
+        factory = AlbumViewModelFactory(context)
+    )
 
     var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
     var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // estado de catálago de álbumes
     val albumsState by albumVm.state.observeAsState(AlbumViewModel.UiState.Idle)
 
     LaunchedEffect(Unit) {
