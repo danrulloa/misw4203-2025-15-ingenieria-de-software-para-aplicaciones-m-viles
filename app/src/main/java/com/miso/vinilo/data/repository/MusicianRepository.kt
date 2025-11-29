@@ -9,6 +9,7 @@ import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.database.dao.MusicianDao
 import com.miso.vinilo.data.database.entities.MusicianEntity
+import com.miso.vinilo.data.dto.AlbumDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -84,6 +85,24 @@ class MusicianRepository(
         return serviceAdapter.getMusician(id)
     }
 
+    /**
+     * Associates an album with a musician via the network API.
+     * @param musicianId The ID of the musician
+     * @param albumId The ID of the album to associate
+     * @return NetworkResult wrapping the updated AlbumDto on success, or an error
+     */
+    suspend fun addAlbumToMusician(
+        musicianId: Long,
+        albumId: Long
+    ): NetworkResult<AlbumDto>{
+        return serviceAdapter.addAlbumToMusician(musicianId,albumId)
+    }
+    /**
+     * Retrieves all musicians from the network.
+     */
+    suspend fun getMusicians(): NetworkResult<List<MusicianDto>> {
+        return serviceAdapter.getMusicians()
+    }
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.

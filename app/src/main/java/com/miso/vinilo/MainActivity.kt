@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +36,7 @@ import com.miso.vinilo.data.dto.MusicianDto
 import com.miso.vinilo.ui.theme.BaseWhite
 import com.miso.vinilo.ui.theme.PrincipalColor
 import com.miso.vinilo.ui.theme.ViniloTheme
+import org.koin.androidx.compose.koinViewModel
 import com.miso.vinilo.ui.views.home.HomeScreen
 import com.miso.vinilo.ui.views.album.AlbumDetailScreen
 import com.miso.vinilo.ui.views.albums.AlbumsScreen
@@ -43,7 +46,12 @@ import com.miso.vinilo.ui.views.collectors.CollectorsScreen
 import com.miso.vinilo.ui.viewmodels.MusicianViewModel
 import com.miso.vinilo.ui.viewmodels.AlbumViewModel
 import com.miso.vinilo.ui.viewmodels.CollectorViewModel
+import com.miso.vinilo.ui.viewmodels.CollectorDetailViewModel
 import com.miso.vinilo.ui.views.musicians.MusicianDetailScreen
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.miso.vinilo.ui.viewmodels.AlbumViewModelFactory
+import com.miso.vinilo.ui.views.collectors.CollectorDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,27 +74,34 @@ fun ViniloApp() {
     NavigationSuiteScaffold(
         containerColor = Color.Transparent,
         navigationSuiteItems = {
-            AppDestinations.entries.forEach {
+            AppDestinations.entries.forEach { entries ->
 
-                val isSelected = it == currentDestination
+                val isSelected = entries == currentDestination
                 val tint = if (isSelected) PrincipalColor else BaseWhite
 
                 item(
                     icon = {
                         Icon(
-                            it.icon,
-                            contentDescription = it.label,
+                            entries.icon,
+                            contentDescription = entries.label,
                             tint = tint
                         )
                     },
-                    // Force the label to use the app typography so we know it's using Montserrat
-                    label = { Text(it.label, style = MaterialTheme.typography.labelSmall, letterSpacing = (-0.9).sp) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    // Add explicit semantics for E2E tests
+                    label = { 
+                        Text(
+                            entries.label, 
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), 
+                            letterSpacing = (-1.2).sp,
+                            modifier = Modifier.semantics { contentDescription = entries.label }
+                        ) 
+                    },
+                    selected = entries == currentDestination,
+                    onClick = { currentDestination = entries }
                 )
             }
         }
-    ) {
+    ) { 
         Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) { innerPadding ->
             val contentModifier = Modifier.padding(innerPadding)
             when (currentDestination) {
@@ -103,7 +118,10 @@ fun ViniloApp() {
 fun AlbumScreenHost(modifier: Modifier = Modifier) {
     // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
     // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: AlbumViewModel = viewModel()
+    val context = LocalContext.current
+    val vm: AlbumViewModel = viewModel(
+        factory = AlbumViewModelFactory(context)
+    )
     var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     if (selectedAlbumId == null) {
@@ -133,16 +151,38 @@ fun AlbumScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun MusicianScreenHost(modifier: Modifier = Modifier) {
-    // Get ViewModel from Koin DI for musicians, keep AlbumViewModel from the default factory
-    val musicianVm: MusicianViewModel = org.koin.androidx.compose.koinViewModel()
-    val albumVm: AlbumViewModel = viewModel()
+    val musicianVm: MusicianViewModel = koinViewModel()
+    val context = LocalContext.current
+    val albumVm: AlbumViewModel = viewModel(
+        factory = AlbumViewModelFactory(context)
+    )
 
     var selectedMusicianId by rememberSaveable { mutableStateOf<Long?>(null) }
     var selectedAlbumId by rememberSaveable { mutableStateOf<Long?>(null) }
 
+    val albumsState by albumVm.state.observeAsState(AlbumViewModel.UiState.Idle)
+
+    LaunchedEffect(Unit) {
+        if (albumsState is AlbumViewModel.UiState.Idle) {
+            albumVm.loadAlbums()
+        }
+    }
+
+    val selectableAlbums: List<MusicianViewModel.AlbumUi> =
+        (albumsState as? AlbumViewModel.UiState.Success)
+            ?.data
+            ?.map { dto ->
+                MusicianViewModel.AlbumUi(
+                    id = dto.id,
+                    name = dto.name,
+                    cover = dto.cover,
+                    year = dto.releaseDate?.take(4) ?: "—"
+                )
+            }
+            ?: emptyList()
+
     when {
         selectedAlbumId != null -> {
-            // 💿 Detalle de álbum (reutilizamos tu pantalla existente)
             AlbumDetailScreen(
                 albumId = selectedAlbumId!!,
                 viewModel = albumVm,
@@ -151,9 +191,6 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
         }
 
         selectedMusicianId == null -> {
-            // Lista de músicos
-            // Pasamos el ViewModel directo al composable; este consume Flow<PagingData> y
-            // controla su propio refresco (pull-to-refresh) a través de viewModel.refreshMusicians().
             MusicianScreen(
                 viewModel = musicianVm,
                 modifier = modifier,
@@ -172,9 +209,13 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
             MusicianDetailScreen(
                 state = detailState,
                 onBackClick = { selectedMusicianId = null },
-                onAlbumClick = { albumId ->
-                    selectedAlbumId = albumId
+                onAlbumClick = { albumId -> selectedAlbumId = albumId },
+                onAddAlbumConfirm = { albumId ->
+                    selectedMusicianId?.let { musicianId ->
+                        musicianVm.addAlbumToMusician(musicianId, albumId)
+                    }
                 },
+                selectableAlbums = selectableAlbums,
                 modifier = modifier
             )
         }
@@ -183,23 +224,44 @@ fun MusicianScreenHost(modifier: Modifier = Modifier) {
 
 @Composable
 fun CollectorScreenHost(modifier: Modifier = Modifier) {
-    // Instantiate the ViewModel directly; the ViewModel has a no-arg constructor that
-    // creates its own repository from BuildConfig, so a factory is no longer necessary.
-    val vm: CollectorViewModel = viewModel()
+    // Get ViewModel for the list (uses Room/Paging) from Koin
+    val listVm: CollectorViewModel = koinViewModel()
+    // Get ViewModel for the detail screen from Koin
+    val detailVm: CollectorDetailViewModel = koinViewModel()
 
-    // Observe LiveData state so the UI recomposes on updates.
-    val state by vm.state.observeAsState(CollectorViewModel.UiState.Idle)
+    var selectedCollectorId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    // Trigger loading only when the composable enters composition and the VM is idle.
-    LaunchedEffect(Unit) {
-        if (state is CollectorViewModel.UiState.Idle) {
-            vm.loadCollectors()
+    if (selectedCollectorId == null) {
+        // This is the list view
+
+        // Trigger loading for the Room-based list
+        LaunchedEffect(Unit) {
+            listVm.onScreenReady()
         }
-    }
 
-    // Pass the current state to the screen composable.
-    CollectorsScreen(state = state, modifier = modifier)
+        // Pass the Room-based viewModel to the list screen
+        CollectorsScreen(
+            viewModel = listVm,
+            modifier = modifier,
+            // When a collector is clicked, update the state to navigate to the detail screen
+            onCollectorClick = { id -> selectedCollectorId = id }
+        )
+    } else {
+        // This is the detail view (logic from 'develop')
+        val detailState by detailVm.uiState.collectAsState()
+
+        LaunchedEffect(selectedCollectorId) {
+            selectedCollectorId?.let { detailVm.getCollectorDetail(it) }
+        }
+
+        CollectorDetailScreen(
+            state = detailState,
+            onBackClick = { selectedCollectorId = null },
+            modifier = modifier
+        )
+    }
 }
+
 
 enum class AppDestinations(
     val label: String,
@@ -241,7 +303,8 @@ fun AlbumScreenPreview() {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             ),
             AlbumDto(
                 id = 101,
@@ -252,7 +315,8 @@ fun AlbumScreenPreview() {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             ),
             AlbumDto(
                 id = 102,
@@ -263,7 +327,8 @@ fun AlbumScreenPreview() {
                 genre = "Rock",
                 recordLabel = "EMI",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList()
             )
         )
 

@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,6 +22,7 @@ import com.miso.vinilo.ui.theme.ViniloTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import com.miso.vinilo.data.GlobalRoleState
 
 private val LogoSize = 200.dp
 
@@ -28,6 +31,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -47,7 +51,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(200.dp))
+        Spacer(modifier = Modifier.weight(1f).fillMaxWidth().heightIn(min = 32.dp))
 
         Box(modifier = Modifier
             .size(LogoSize)
@@ -70,6 +74,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         // Mostrar solo el dropdown centrado y con el mismo ancho que el logo
         RoleDropdown()
+        
+        Spacer(modifier = Modifier.weight(1f).fillMaxWidth().heightIn(min = 32.dp))
     }
 }
 
@@ -83,17 +89,20 @@ private fun SpacerSmall() {
 @Composable
 private fun RoleDropdown() {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    var selectedRole by rememberSaveable { mutableStateOf("Usuario") }
-    // FocusRequester must be attached to the text field so ExposedDropdownMenuBox can request focus
     val focusRequester = remember { FocusRequester() }
+
+    // Leemos el valor global (esto ya es observable para Compose)
+    val selectedRole = GlobalRoleState.selectedRole
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded }
     ) {
-        // El TextField puede consumir clicks; envolverlo en un Box clickable garantiza
-        // que tocar el área togglee `expanded` y abra el menú.
-        Box(modifier = Modifier.width(LogoSize).clickable { expanded = !expanded }) {
+        Box(
+            modifier = Modifier
+                .width(LogoSize)
+                .clickable { expanded = !expanded }
+        ) {
             OutlinedTextField(
                 value = selectedRole,
                 onValueChange = {},
@@ -114,14 +123,20 @@ private fun RoleDropdown() {
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            DropdownMenuItem(text = { Text("Usuario") }, onClick = {
-                selectedRole = "Usuario"
-                expanded = false
-            })
-            DropdownMenuItem(text = { Text("Coleccionista") }, onClick = {
-                selectedRole = "Coleccionista"
-                expanded = false
-            })
+            DropdownMenuItem(
+                text = { Text("Usuario") },
+                onClick = {
+                    GlobalRoleState.selectedRole = "Usuario"
+                    expanded = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Coleccionista") },
+                onClick = {
+                    GlobalRoleState.selectedRole = "Coleccionista"
+                    expanded = false
+                }
+            )
         }
     }
 }

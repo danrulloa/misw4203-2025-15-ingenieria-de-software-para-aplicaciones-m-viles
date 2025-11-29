@@ -6,6 +6,7 @@ import com.miso.vinilo.data.adapter.NetworkResult
 import com.miso.vinilo.data.adapter.NetworkServiceAdapterMusicians
 import com.miso.vinilo.data.database.dao.MusicianDao
 import com.miso.vinilo.data.database.entities.MusicianEntity
+import com.miso.vinilo.data.dto.AlbumDto
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -124,4 +125,56 @@ class MusicianRepositoryImplTest {
         val data = (result as NetworkResult.Success).data
         assertEquals("Rubén Blades Bellido de Luna", data.name)
     }
+
+    @Test
+    fun `addAlbumToMusician returns Success when adapter succeeds`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val dao = mockk<MusicianDao>(relaxed = true)
+
+        val albumDto = AlbumDto(
+            id = 102,
+            name = "A Night at the Opera",
+            cover = "url",
+            releaseDate = "1975-11-21T00:00:00.000Z",
+            description = "desc",
+            genre = "Rock",
+            recordLabel = "EMI",
+            tracks = emptyList(),
+            performers = emptyList(),
+            comments = emptyList()
+        )
+
+        coEvery { adapter.addAlbumToMusician(100L, 102L) } returns NetworkResult.Success(albumDto)
+
+        val repo = MusicianRepository(adapter, dao)
+        val result = repo.addAlbumToMusician(100L, 102L)
+
+        coVerify { adapter.addAlbumToMusician(100L, 102L) }
+        assertTrue(result is NetworkResult.Success)
+        assertEquals(albumDto, (result as NetworkResult.Success).data)
+    }
+
+    @Test
+    fun `addAlbumToMusician returns Error when adapter fails`() = runTest {
+        val adapter = mockk<NetworkServiceAdapterMusicians>()
+        val dao = mockk<MusicianDao>(relaxed = true)
+
+        coEvery { adapter.addAlbumToMusician(100L, 999L) } returns NetworkResult.Error(
+            message = "Error al agregar álbum al artista",
+            throwable = RuntimeException("Network down")
+        )
+
+        val repo = MusicianRepository(adapter, dao)
+        val result = repo.addAlbumToMusician(100L, 999L)
+
+        assertTrue(result is NetworkResult.Error)
+        assertEquals(
+            "Error al agregar álbum al artista",
+            (result as NetworkResult.Error).message
+        )
+        assertNotNull(result.throwable)
+    }
+
+
+
 }

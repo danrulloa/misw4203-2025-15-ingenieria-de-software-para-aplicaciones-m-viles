@@ -143,7 +143,8 @@ class MusicianViewModelTest {
                 genre = "Salsa",
                 recordLabel = "Elektra",
                 tracks = emptyList(),
-                performers = emptyList()
+                performers = emptyList(),
+                comments = emptyList(),
             )
         )
 
@@ -176,4 +177,6 @@ class MusicianViewModelTest {
         assertEquals("Buscando América", data.albums[0].name)
         assertEquals("1984", data.albums[0].year)
     }
+
+
 }

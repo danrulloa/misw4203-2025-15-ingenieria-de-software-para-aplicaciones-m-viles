@@ -2,23 +2,29 @@ package com.miso.vinilo.ui.views.albums
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.swipeUp
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.miso.vinilo.MainActivity
 import com.miso.vinilo.data.adapter.NetworkConfig
-import java.util.concurrent.TimeUnit
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,33 +32,31 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AlbumDetailE2ETest {
 
-    companion object {
-        private lateinit var server: MockWebServer
-
-        @JvmStatic
-        @BeforeClass
-        fun setUpClass() {
-            server = MockWebServer()
-            server.start()
-            NetworkConfig.baseUrl = server.url("/").toString()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun tearDownClass() {
-            try {
-                server.shutdown()
-            } catch (_: Throwable) { // ignore
-            }
-        }
-    }
+    @get:Rule
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val composeTestRule = createEmptyComposeRule()
+
+    private lateinit var server: MockWebServer
 
     @Before
-    fun setupServer() {
-        // Response for the album list
+    fun setUp() {
+        // Start a new server for each test and set the base URL
+        server = MockWebServer()
+        server.start()
+        NetworkConfig.baseUrl = server.url("/").toString()
+    }
+
+    @After
+    fun tearDown() {
+        // Shut down the server after each test
+        server.shutdown()
+    }
+
+    @Test
+    fun e2e_userNavigatesToDetail_and_seesAlbumDetails() {
+        // --- Configuración local del Dispatcher SOLO para este test ---
         val albumListJson = """
         [
           {
@@ -65,10 +69,89 @@ class AlbumDetailE2ETest {
             "recordLabel": "Elektra"
           }
         ]
-        """.trimIndent()
+    """.trimIndent()
+
+        val albumDetailJson = """
+        {
+            "id": 100,
+            "name": "Buscando América",
+            "cover": "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+            "releaseDate": "1984-08-01T00:00:00.000Z",
+            "description": "...",
+            "genre": "Salsa",
+            "recordLabel": "Elektra",
+            "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
+            "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}],
+            "comments": []
+        }
+    """.trimIndent()
+
+        // Guardamos el dispatcher anterior para restaurarlo al final
+        val previousDispatcher = server.dispatcher
+
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val path = request.path ?: ""
+                return when {
+                    // Lista de álbumes
+                    path.startsWith("/albums") && !path.startsWith("/albums/100") -> {
+                        MockResponse()
+                            .setResponseCode(200)
+                            .setBody(albumListJson)
+                    }
+                    // Detalle del álbum 100
+                    path.startsWith("/albums/100") -> {
+                        MockResponse()
+                            .setResponseCode(200)
+                            .setBody(albumDetailJson)
+                    }
+                    else -> {
+                        // Cualquier otra cosa -> 404 para detectar llamadas inesperadas
+                        MockResponse().setResponseCode(404)
+                    }
+                }
+            }
+        }
+
+        try {
+            // --- Act & Assert ---
+
+            // 1. Navigate to the Albums tab
+            waitAndClickNavItem("Albumes")
+
+            // 2. Wait for the list item to appear and click it
+            waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
+            composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
+
+            // 3. Verify that the detail screen is shown by looking for a unique element
+            waitForTextFlexible("Canciones", timeoutMs = 5_000L)
+            composeTestRule.onNodeWithText("Canciones").assertIsDisplayed()
+            composeTestRule.onNodeWithText("Decisiones").assertIsDisplayed() // Also check for a track name
+        } finally {
+            // Restauramos el dispatcher original para no afectar otros tests
+            server.dispatcher = previousDispatcher
+        }
+    }
+
+    @Test
+    fun e2e_collectorAddsCommentToAlbum_seesComment() {
+        // Arrange: Enqueue all responses for this specific test flow
+
+        val albumListJson = """
+        [
+          {
+            "id": 100,
+            "name": "Buscando América",
+            "cover": "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+            "releaseDate": "1984-08-01T00:00:00.000Z",
+            "description": "...",
+            "genre": "Salsa",
+            "recordLabel": "Elektra"
+          }
+        ]
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumListJson))
 
-        // Response for the album detail
         val albumDetailJson = """
         {
             "id": 100,
@@ -81,33 +164,96 @@ class AlbumDetailE2ETest {
             "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
             "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}]
         }
-        """.trimIndent()
+        """
         server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailJson))
-    }
+        
+        val postCommentResponse = """
+        {"id": 5, "description": "This is a great album!", "rating": 5}
+        """
+        server.enqueue(MockResponse().setResponseCode(201).setBody(postCommentResponse))
 
-    @After
-    fun afterEach() {
-        try {
-            while (true) {
-                server.takeRequest(100, TimeUnit.MILLISECONDS) ?: break
-            }
-        } catch (_: Throwable) { // ignore
+        val albumDetailWithCommentJson = """
+        {
+            "id": 100, "name": "Buscando América", "cover": "...",
+            "comments": [{"id":5, "description":"This is a great album!", "rating":5, "collector": {"id": 100, "name": "Manolo Bellon"}}]
         }
-    }
+        """
+        server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailWithCommentJson))
 
+        // Act & Assert
+        // 1. Select Collector Role
+        composeTestRule.onNodeWithText("Usuario").performClick()
+        composeTestRule.onNodeWithText("Coleccionista").performClick()
+
+        // 2. Navigate to the Albums tab
+        waitAndClickNavItem("Albumes")
+
+        // 3. Wait for the list item to appear and click it
+        waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
+        composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
+
+        // 4. Scroll down for small screens and click on 'Add Comment' button
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
+        waitForTextFlexible("Agregar Comentario", timeoutMs = 15_000L)
+        composeTestRule.onNodeWithText("Agregar Comentario").performClick()
+
+        // 5. Fill and submit the form
+        composeTestRule.onNodeWithText("Calificación (1-5)").performTextInput("5")
+        composeTestRule.onNodeWithText("Descripción").performTextInput("This is a great album!")
+        composeTestRule.onNodeWithText("Guardar").performClick()
+
+        // 6. Verify the new comment is displayed
+        waitForTextFlexible("This is a great album!", timeoutMs = 5_000L)
+    }
+    
     @Test
-    fun e2e_userNavigatesToDetail_and_seesAlbumDetails() {
-        // 1. Navigate to the Albums tab
+    fun e2e_userViewsAlbumDetail_addCommentButtonIsNotVisible() {
+        // Arrange: Enqueue responses for navigation
+
+        val albumListJson = """
+        [
+          {
+            "id": 100,
+            "name": "Buscando América",
+            "cover": "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+            "releaseDate": "1984-08-01T00:00:00.000Z",
+            "description": "...",
+            "genre": "Salsa",
+            "recordLabel": "Elektra"
+          }
+        ]
+        """
+        server.enqueue(MockResponse().setResponseCode(200).setBody(albumListJson))
+
+        val albumDetailJson = """
+        {
+            "id": 100,
+            "name": "Buscando América",
+            "cover": "https://i.pinimg.com/564x/aa/5f/ed/aa5fed7fac61cc8f41d1e79db917a7cd.jpg",
+            "releaseDate": "1984-08-01T00:00:00.000Z",
+            "description": "...",
+            "genre": "Salsa",
+            "recordLabel": "Elektra",
+            "tracks": [{"id":1, "name":"Decisiones", "duration":"5:05"}],
+            "performers": [{"id":1, "name":"Rubén Blades", "image":"...", "description":"..."}]
+        }
+        """
+        server.enqueue(MockResponse().setResponseCode(200).setBody(albumDetailJson))
+
+        // Act: Role is "Usuario" by default, no selection needed.
+        // 1. Navigate to Albums tab
         waitAndClickNavItem("Albumes")
 
         // 2. Wait for the list item to appear and click it
         waitForTextFlexible("Buscando América", timeoutMs = 15_000L)
         composeTestRule.onNodeWithText("Buscando América", substring = true).performClick()
 
-        // 3. Verify that the detail screen is shown by looking for a unique element
-        waitForTextFlexible("Canciones", timeoutMs = 5_000L)
-        composeTestRule.onNodeWithText("Canciones").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Decisiones").assertIsDisplayed() // Also check for a track name
+        // Assert: Verify the button does not exist
+        // Use swipeUp as it's more reliable on older APIs than performScrollToNode
+        composeTestRule.onRoot().performTouchInput { swipeUp() }
+
+        // After swiping, the button should not exist.
+        composeTestRule.onNodeWithText("Agregar Comentario").assertDoesNotExist()
     }
 
     // Helper functions copied from AlbumE2ETest
