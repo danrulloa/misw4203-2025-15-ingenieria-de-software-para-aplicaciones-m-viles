@@ -77,10 +77,6 @@ class AlbumRepository(
         return serviceAdapter.postComment(albumId, comment)
     }
 
-    suspend fun getAlbum(id: Long): NetworkResult<AlbumDto> {
-        return serviceAdapter.getAlbum(id)
-    }
-
     companion object {
         /**
          * Convenience factory to create a repository wired with the network adapter.
